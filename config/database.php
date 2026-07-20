@@ -1,7 +1,7 @@
 <?php
 $host     = "localhost";
 $username = "root";
-$password = "";
+$password = "root";
 $database = "garage_management";
 
 $conn = mysqli_connect($host, $username, $password, $database);

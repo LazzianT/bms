@@ -27,7 +27,25 @@ function loginUser($conn, $username, $password) {
 
     if (mysqli_num_rows($result) > 0) {
         $user = mysqli_fetch_assoc($result);
-        if ($password === $user['password_hash']) {
+        $stored = $user['password_hash'];
+        $valid = false;
+
+        // Support bcrypt hash & legacy plain-text
+        if (password_get_info($stored)['algo'] !== null && password_get_info($stored)['algoName'] !== 'unknown') {
+            $valid = password_verify($password, $stored);
+        } else {
+            // Legacy plain-text comparison
+            $valid = ($password === $stored);
+            // Auto-upgrade to bcrypt
+            if ($valid) {
+                $hashed = password_hash($password, PASSWORD_BCRYPT);
+                $uid = (int)$user['user_id'];
+                mysqli_query($conn, "UPDATE users SET password_hash = '$hashed' WHERE user_id = $uid");
+            }
+        }
+
+        if ($valid) {
+            session_regenerate_id(true);
             $_SESSION['user_id']     = $user['user_id'];
             $_SESSION['username']    = $user['username'];
             $_SESSION['role']        = $user['role'];
