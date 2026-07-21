@@ -332,17 +332,23 @@ $isLunas    = $reg['status_servis'] == 'Selesai Lunas';
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label">Cari Jasa</label>
-                    <input type="text" class="form-control" id="cariJasa" placeholder="Nama jasa..." oninput="searchJasa()">
+                    <label class="form-label">Nama Jasa <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="jasaNamaInput" placeholder="Contoh: Ganti Oli, Tune Up, dll">
                 </div>
-                <div id="jasaList" class="mb-3" style="max-height:200px;overflow-y:auto;"></div>
-                <div id="jasaForm" class="d-none">
-                    <div class="mb-2"><strong id="jasaNama"></strong> <small class="text-muted" id="jasaHarga"></small></div>
-                    <div class="row g-2">
-                        <div class="col-8"><input type="number" class="form-control form-control-sm" id="jasaQty" value="1" min="1"></div>
-                        <div class="col-4"><button class="btn btn-primary btn-sm w-100" onclick="addJasa()">Tambah</button></div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label">Harga <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="jasaHargaInput" min="0" placeholder="0">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Qty</label>
+                        <input type="number" class="form-control" id="jasaQty" value="1" min="1">
                     </div>
                 </div>
+            </div>
+            <div class="modal-footer" style="border-top:1px solid #f1f5f9;">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="addJasa()"><i class="bi bi-check-lg me-1"></i> Tambah</button>
             </div>
         </div>
     </div>
@@ -402,7 +408,7 @@ function loadAllSparepart() {
 
 function renderSpTable(items) {
     var selectedIds = selectedSpItems.map(function(i) { return i.id; });
-    var filtered = items.filter(function(s) { return selectedIds.indexOf(s.id) === -1; });
+    var filtered = items.filter(function(s) { return selectedIds.indexOf(parseInt(s.sparepart_id)) === -1; });
 
     if (filtered.length == 0) {
         var msg = selectedSpItems.length > 0 ? 'Semua sparepart sudah ditambahkan' : 'Tidak ada sparepart tersedia';
@@ -526,39 +532,21 @@ function hapusSparepart(detailId) {
 
 var selectedJasa = null;
 function openAddJasa() {
-    selectedJasa = null;
-    document.getElementById('cariJasa').value = '';
-    document.getElementById('jasaList').innerHTML = '';
-    document.getElementById('jasaForm').classList.add('d-none');
-    new bootstrap.Modal(document.getElementById('jasaModal')).show();
-    searchJasa();
-}
-function searchJasa() {
-    var q = document.getElementById('cariJasa').value;
-    fetch('/bms/api/servis_action.php?action=get_jasa&q=' + encodeURIComponent(q))
-        .then(r => r.json())
-        .then(data => {
-            var html = '';
-            data.data.forEach(function(j) {
-                html += '<div class="p-2 border rounded mb-1" style="cursor:pointer" onclick="selectJasa(' + j.jasa_id + ',\'' + j.nama_jasa.replace(/'/g,"\\'") + '\',' + j.harga + ')">';
-                html += '<small class="fw-semibold">' + j.nama_jasa + '</small><br><small class="text-muted">Rp ' + Number(j.harga).toLocaleString('id-ID') + '</small></div>';
-            });
-            document.getElementById('jasaList').innerHTML = html || '<div class="text-muted text-center py-2">Tidak ditemukan</div>';
-        });
-}
-function selectJasa(id, name, harga) {
-    selectedJasa = id;
-    document.getElementById('jasaNama').textContent = name;
-    document.getElementById('jasaHarga').textContent = 'Rp ' + Number(harga).toLocaleString('id-ID');
+    document.getElementById('jasaNamaInput').value = '';
+    document.getElementById('jasaHargaInput').value = '';
     document.getElementById('jasaQty').value = 1;
-    document.getElementById('jasaForm').classList.remove('d-none');
+    new bootstrap.Modal(document.getElementById('jasaModal')).show();
 }
 function addJasa() {
-    if (!selectedJasa) return;
+    var nama = document.getElementById('jasaNamaInput').value.trim();
+    var hargaEl = document.getElementById('jasaHargaInput');
+    var harga = parseFloat(hargaEl.dataset.raw || hargaEl.value.replace(/[^\d]/g, '')) || 0;
+    var qty = document.getElementById('jasaQty').value;
+    if (!nama || harga <= 0) { alert('Nama jasa dan harga wajib diisi'); return; }
     fetch('/bms/api/servis_action.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=add_jasa&trans_id=' + transId + '&jasa_id=' + selectedJasa + '&qty=' + document.getElementById('jasaQty').value
+        body: 'action=add_jasa&trans_id=' + transId + '&nama_jasa=' + encodeURIComponent(nama) + '&harga=' + harga + '&qty=' + qty
     }).then(r => r.json()).then(data => { if (data.success) reloadPage(); else alert(data.message); });
 }
 function hapusJasa(detailId) {
@@ -624,13 +612,15 @@ function setSelesai() {
 // ==================== PEMBAYARAN ====================
 
 function hitungKembali() {
-    var bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
+    var el = document.getElementById('inputBayar');
+    var bayar = parseFloat(el.dataset.raw || el.value.replace(/[^\d]/g, '')) || 0;
     var kembali = bayar - grandTotalVal;
     document.getElementById('kembali').value = 'Rp ' + Number(Math.max(0, kembali)).toLocaleString('id-ID');
 }
 function prosesBayar(e) {
     e.preventDefault();
-    var bayar = document.getElementById('inputBayar').value;
+    var el = document.getElementById('inputBayar');
+    var bayar = parseFloat(el.dataset.raw || el.value.replace(/[^\d]/g, '')) || 0;
     var metode = document.getElementById('metodeBayar').value;
     if (parseFloat(bayar) < grandTotalVal) { alert('Jumlah bayar kurang dari grand total'); return false; }
     fetch('/bms/api/servis_action.php', {
