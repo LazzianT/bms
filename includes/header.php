@@ -53,7 +53,6 @@ $currentDir  = basename(dirname($_SERVER['PHP_SELF']));
                         <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'customer.php') ? 'active' : ''; ?>" href="/bms/master/customer.php"><i class="bi bi-person"></i> Customer</a></li>
                         <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'kendaraan.php') ? 'active' : ''; ?>" href="/bms/master/kendaraan.php"><i class="bi bi-bicycle"></i> Kendaraan</a></li>
                         <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'sparepart.php') ? 'active' : ''; ?>" href="/bms/master/sparepart.php"><i class="bi bi-box"></i> Sparepart</a></li>
-                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'jasa.php') ? 'active' : ''; ?>" href="/bms/master/jasa.php"><i class="bi bi-gear"></i> Jasa</a></li>
                         <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'mekanik.php') ? 'active' : ''; ?>" href="/bms/master/mekanik.php"><i class="bi bi-person-workspace"></i> Mekanik</a></li>
                         <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'supplier.php') ? 'active' : ''; ?>" href="/bms/master/supplier.php"><i class="bi bi-truck"></i> Supplier</a></li>
                     </ul>
@@ -68,11 +67,11 @@ $currentDir  = basename(dirname($_SERVER['PHP_SELF']));
                 <div class="collapse <?php echo ($currentDir == 'transaksi') ? 'show' : ''; ?>" id="transaksiSubmenu">
                     <ul class="nav flex-column ms-2">
                         <?php if (in_array($_SESSION['role'], ['admin', 'kasir'])): ?>
-                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'servis_list.php') ? 'active' : ''; ?>" href="/bms/transaksi/servis_list.php"><i class="bi bi-wrench"></i> Service</a></li>
-                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'pembelian_list.php') ? 'active' : ''; ?>" href="/bms/transaksi/pembelian_list.php"><i class="bi bi-cart"></i> Pembelian Part</a></li>
+                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'servis_list.php') ? 'active' : ''; ?>" href="/bms/transaksi/servis_list.php"><i class="bi bi-clipboard-plus"></i> Pendaftaran Servis</a></li>
+                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'transaksi_list.php') ? 'active' : ''; ?>" href="/bms/transaksi/transaksi_list.php"><i class="bi bi-wrench"></i> Transaksi Servis</a></li>
+                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'pembelian_list.php') ? 'active' : ''; ?>" href="/bms/transaksi/pembelian_list.php"><i class="bi bi-cart"></i> Pembelian Sparepart</a></li>
+                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'penjualan_sp.php') ? 'active' : ''; ?>" href="/bms/transaksi/penjualan_sp.php"><i class="bi bi-bag"></i> Penjualan Sparepart</a></li>
                         <?php endif; ?>
-                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'po_list.php') ? 'active' : ''; ?>" href="/bms/transaksi/po_list.php"><i class="bi bi-file-earmark-text"></i> Purchase Order</a></li>
-                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'mrs_list.php') ? 'active' : ''; ?>" href="/bms/transaksi/mrs_list.php"><i class="bi bi-inbox"></i> Penerimaan (MRS)</a></li>
                     </ul>
                 </div>
             </li>
@@ -85,8 +84,9 @@ $currentDir  = basename(dirname($_SERVER['PHP_SELF']));
                     <ul class="nav flex-column ms-2">
                         <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'performa_mekanik.php') ? 'active' : ''; ?>" href="/bms/laporan/performa_mekanik.php"><i class="bi bi-person-check"></i> Performa Mekanik</a></li>
                         <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'penjualan_sparepart.php') ? 'active' : ''; ?>" href="/bms/laporan/penjualan_sparepart.php"><i class="bi bi-box-seam"></i> Penjualan Sparepart</a></li>
-                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'servis.php') ? 'active' : ''; ?>" href="/bms/laporan/servis.php"><i class="bi bi-clipboard-check"></i> Servis</a></li>
-                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'omset_pembelian.php') ? 'active' : ''; ?>" href="/bms/laporan/omset_pembelian.php"><i class="bi bi-cash-stack"></i> Omset vs Pembelian</a></li>
+                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'servis.php') ? 'active' : ''; ?>" href="/bms/laporan/servis.php"><i class="bi bi-clipboard-check"></i> Transaksi Servis</a></li>
+                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'pembelian.php') ? 'active' : ''; ?>" href="/bms/laporan/pembelian.php"><i class="bi bi-cart-check"></i> Pembelian</a></li>
+                        <li class="nav-item"><a class="nav-link py-1 <?php echo ($currentPage == 'omset_pembelian.php') ? 'active' : ''; ?>" href="/bms/laporan/omset_pembelian.php"><i class="bi bi-cash-stack"></i> Omset & Pendapatan</a></li>
                     </ul>
                 </div>
             </li>
