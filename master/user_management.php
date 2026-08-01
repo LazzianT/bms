@@ -104,6 +104,26 @@ $result = mysqli_query($conn, "SELECT user_id, username, role, nama_lengkap FROM
     </div>
 </div>
 
+<!-- Modal Reset Password -->
+<div class="modal fade" id="resetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius:14px;border:none;">
+            <div class="modal-header" style="border-bottom:1px solid #f1f5f9;">
+                <h6 class="modal-title fw-bold"><i class="bi bi-key me-1"></i> Reset Password</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">Password baru untuk <span class="fw-bold" id="resetUsername"></span></label>
+                <input type="password" class="form-control" id="resetPassword" minlength="4" placeholder="Masukkan password baru">
+            </div>
+            <div class="modal-footer" style="border-top:1px solid #f1f5f9;">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="submitResetPassword()"><i class="bi bi-check-lg me-1"></i> Reset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function openAddModal() {
     document.getElementById('userForm').reset();
@@ -116,7 +136,7 @@ function openAddModal() {
 }
 
 function openEditModal(id) {
-    fetch('/bms/api/user_action.php?action=get&id=' + id)
+    fetch('<?= BASE_URL ?>/api/user_action.php?action=get&id=' + id)
         .then(r => r.json())
         .then(data => {
             if (data.success) {
@@ -137,38 +157,50 @@ function openEditModal(id) {
 function saveUser(e) {
     e.preventDefault();
     var formData = new FormData(document.getElementById('userForm'));
-    fetch('/bms/api/user_action.php', { method: 'POST', body: formData })
+    fetch('<?= BASE_URL ?>/api/user_action.php', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(data => {
-            if (data.success) { location.reload(); }
-            else { alert(data.message); }
+            if (data.success) { BMS.success('User berhasil disimpan'); setTimeout(function(){ location.reload(); }, 800); }
+            else { BMS.error(data.message); }
         });
     return false;
 }
 
+var resetId = 0;
 function resetPassword(id, username) {
-    var newPass = prompt('Masukkan password baru untuk "' + username + '":');
-    if (!newPass) return;
+    resetId = id;
+    document.getElementById('resetUsername').textContent = username;
+    document.getElementById('resetPassword').value = '';
+    new bootstrap.Modal(document.getElementById('resetModal')).show();
+}
+function submitResetPassword() {
+    var newPass = document.getElementById('resetPassword').value;
+    if (!newPass) { BMS.warning('Password baru tidak boleh kosong'); return; }
     var formData = new FormData();
     formData.append('action', 'reset_password');
-    formData.append('user_id', id);
+    formData.append('user_id', resetId);
     formData.append('new_password', newPass);
-    fetch('/bms/api/user_action.php', { method: 'POST', body: formData })
+    fetch('<?= BASE_URL ?>/api/user_action.php', { method: 'POST', body: formData })
         .then(r => r.json())
-        .then(data => { alert(data.message); });
+        .then(data => {
+            bootstrap.Modal.getInstance(document.getElementById('resetModal')).hide();
+            if (data.success) BMS.success(data.message); else BMS.error(data.message);
+        });
 }
 
 function deleteUser(id, username) {
-    if (!confirm('Yakin hapus user "' + username + '"?')) return;
-    var formData = new FormData();
-    formData.append('action', 'delete');
-    formData.append('id', id);
-    fetch('/bms/api/user_action.php', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) { location.reload(); }
-            else { alert(data.message); }
-        });
+    BMS.confirm('Yakin hapus user "' + username + '"?').then(function(ok) {
+        if (!ok) return;
+        var formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('id', id);
+        fetch('<?= BASE_URL ?>/api/user_action.php', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) { BMS.success('User berhasil dihapus'); setTimeout(function(){ location.reload(); }, 800); }
+                else { BMS.error(data.message); }
+            });
+    });
 }
 </script>
 

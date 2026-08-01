@@ -37,7 +37,7 @@ $result = mysqli_query($conn, $query);
             </div>
             <button type="submit" class="btn btn-primary btn-sm">Cari</button>
             <?php if ($search): ?>
-                <a href="/bms/master/mekanik.php" class="btn btn-outline-secondary btn-sm">Reset</a>
+                <a href="<?= BASE_URL ?>/master/mekanik.php" class="btn btn-outline-secondary btn-sm">Reset</a>
             <?php endif; ?>
         </form>
     </div>
@@ -224,7 +224,7 @@ function openAddModal() {
 
 function openEditModal(id) {
     document.getElementById('modalTitle').textContent = 'Edit Mekanik';
-    fetch('/bms/api/mekanik_action.php?action=get&id=' + id)
+    fetch('<?= BASE_URL ?>/api/mekanik_action.php?action=get&id=' + id)
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success) {
@@ -275,7 +275,7 @@ function saveMekanik(e) {
     formData.delete('spesialis_custom');
     formData.append('action', document.getElementById('mekanik_id').value ? 'update' : 'add');
 
-    fetch('/bms/api/mekanik_action.php', {
+    fetch('<?= BASE_URL ?>/api/mekanik_action.php', {
         method: 'POST',
         body: formData
     })
@@ -283,9 +283,10 @@ function saveMekanik(e) {
     .then(function(data) {
         if (data.success) {
             mekanikModal.hide();
-            window.location.reload();
+            BMS.success('Mekanik berhasil disimpan');
+            setTimeout(function(){ window.location.reload(); }, 800);
         } else {
-            alert(data.message || 'Terjadi kesalahan');
+            BMS.error(data.message || 'Terjadi kesalahan');
         }
     });
     return false;
@@ -298,7 +299,7 @@ function deleteMekanik(id, name) {
 }
 
 function confirmDelete() {
-    fetch('/bms/api/mekanik_action.php', {
+    fetch('<?= BASE_URL ?>/api/mekanik_action.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'action=delete&id=' + deleteId
@@ -307,9 +308,10 @@ function confirmDelete() {
     .then(function(data) {
         if (data.success) {
             deleteModal.hide();
-            window.location.reload();
+            BMS.success('Mekanik berhasil dihapus');
+            setTimeout(function(){ window.location.reload(); }, 800);
         } else {
-            alert(data.message || 'Gagal menghapus');
+            BMS.error(data.message || 'Gagal menghapus');
         }
     });
 }

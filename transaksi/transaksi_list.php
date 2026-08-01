@@ -100,12 +100,12 @@ $tabs = [
                             <td><?php echo setStatusBadge($row['status_servis']); ?></td>
                             <td>
                                 <?php if ($row['status_servis'] == 'Dikerjakan'): ?>
-                                    <a href="/bms/transaksi/tambah_servis.php?edit=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary me-1" title="Edit Detail"><i class="bi bi-pencil"></i></a>
+                                    <a href="<?= BASE_URL ?>/transaksi/tambah_servis.php?edit=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary me-1" title="Edit Detail"><i class="bi bi-pencil"></i></a>
                                     <button class="btn btn-sm btn-success" onclick="openBayarModal(<?php echo $row['trans_id']; ?>, <?php echo $row['grand_total']; ?>)" title="Selesaikan & Bayar"><i class="bi bi-cash-stack"></i></button>
                                 <?php elseif ($row['status_servis'] == 'Menunggu'): ?>
-                                    <a href="/bms/transaksi/tambah_servis.php?edit=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Edit Detail"><i class="bi bi-pencil"></i></a>
+                                    <a href="<?= BASE_URL ?>/transaksi/tambah_servis.php?edit=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Edit Detail"><i class="bi bi-pencil"></i></a>
                                 <?php else: ?>
-                                    <a href="/bms/transaksi/detail_servis.php?id=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Lihat Detail"><i class="bi bi-eye"></i></a>
+                                    <a href="<?= BASE_URL ?>/transaksi/detail_servis.php?id=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Lihat Detail"><i class="bi bi-eye"></i></a>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -174,13 +174,13 @@ function hitungKembali() {
 function prosesBayar() {
     var el = document.getElementById('bayarJumlah');
     var bayar = parseFloat(el.dataset.raw || el.value.replace(/[^\d]/g, '')) || 0;
-    if (bayar < currentGrand) { alert('Jumlah bayar kurang dari grand total'); return; }
+    if (bayar < currentGrand) { BMS.error('Jumlah bayar kurang dari grand total'); return; }
     var metode = document.getElementById('bayarMetode').value;
-    fetch('/bms/api/servis_action.php', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    fetch('<?= BASE_URL ?>/api/servis_action.php', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body:'action=bayar&trans_id='+currentTransId+'&bayar='+bayar+'&metode_bayar='+metode
     }).then(r=>r.json()).then(data => {
-        if (data.success) { bootstrap.Modal.getInstance(document.getElementById('bayarModal')).hide(); location.reload(); }
-        else alert(data.message);
+        if (data.success) { bootstrap.Modal.getInstance(document.getElementById('bayarModal')).hide(); BMS.success('Pembayaran berhasil'); setTimeout(function(){ location.reload(); }, 900); }
+        else BMS.error(data.message);
     });
 }
 </script>

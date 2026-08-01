@@ -28,7 +28,7 @@ if (isset($_GET['edit'])) {
 
 <div class="page-header">
     <h4><i class="bi bi-plus-circle me-2"></i><?php echo $editMode ? 'Edit Detail Servis' : 'Daftar Servis Baru'; ?></h4>
-    <a href="/bms/transaksi/servis_list.php" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
+    <a href="<?= BASE_URL ?>/transaksi/servis_list.php" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
 </div>
 
 <!-- Flow Guide -->
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function goStep(n) {
     if (n === 2) {
         if (!document.getElementById('client_id').value || !document.getElementById('vehicle_id').value || !document.getElementById('keluhan').value.trim()) {
-            alert('Customer, Kendaraan, dan Keluhan wajib diisi'); return;
+            BMS.warning('Customer, Kendaraan, dan Keluhan wajib diisi'); return;
         }
     }
     document.getElementById('step1').classList.toggle('d-none', n !== 1);
@@ -194,7 +194,7 @@ function loadVehicles(preselect) {
     var sel = document.getElementById('vehicle_id');
     sel.innerHTML = '<option value="">Memuat...</option>';
     if (!cid) { sel.innerHTML = '<option value="">-- Pilih Customer dulu --</option>'; return; }
-    fetch('/bms/api/servis_action.php?action=get_vehicles&client_id=' + cid).then(r => r.json()).then(data => {
+    fetch('<?= BASE_URL ?>/api/servis_action.php?action=get_vehicles&client_id=' + cid).then(r => r.json()).then(data => {
         sel.innerHTML = '<option value="">-- Pilih Kendaraan --</option>';
         data.data.forEach(function(v) {
             var opt = document.createElement('option');
@@ -213,7 +213,7 @@ function addJasaRow() {
     var hargaEl = document.getElementById('jasaHarga');
     var harga = parseFloat(hargaEl.dataset.raw || hargaEl.value.replace(/[^\d]/g, '')) || 0;
     var qty = parseInt(document.getElementById('jasaQty').value) || 1;
-    if (!nama || harga <= 0) { alert('Nama jasa dan harga wajib diisi'); return; }
+    if (!nama || harga <= 0) { BMS.warning('Nama jasa dan harga wajib diisi'); return; }
     jasaItems.push({nama_jasa: nama, harga: harga, qty: qty, subtotal: harga * qty});
     document.getElementById('jasaNama').value = '';
     hargaEl.value = ''; hargaEl.dataset.raw = '';
@@ -243,7 +243,7 @@ function openSpDialog() {
 }
 function searchSp() {
     var q = document.getElementById('spSearch').value;
-    fetch('/bms/api/servis_action.php?action=get_sparepart&q=' + encodeURIComponent(q)).then(r => r.json()).then(data => {
+    fetch('<?= BASE_URL ?>/api/servis_action.php?action=get_sparepart&q=' + encodeURIComponent(q)).then(r => r.json()).then(data => {
         var html = '';
         data.data.forEach(function(s) {
             html += '<tr><td><code>' + s.kode_sparepart + '</code></td><td>' + s.nama_sparepart + '</td><td>' + s.stok + ' ' + s.satuan + '</td><td>Rp ' + Number(s.harga_jual).toLocaleString('id-ID') + '</td>';
@@ -301,9 +301,9 @@ function simpanServis() {
     }
     var fd = new FormData();
     for (var k in payload) fd.append(k, payload[k]);
-    fetch('/bms/api/servis_action.php', {method: 'POST', body: fd}).then(r => r.json()).then(data => {
-        if (data.success) { window.location.href = '/bms/transaksi/servis_list.php'; }
-        else { alert(data.message || 'Gagal menyimpan'); }
+    fetch('<?= BASE_URL ?>/api/servis_action.php', {method: 'POST', body: fd}).then(r => r.json()).then(data => {
+        if (data.success) { BMS.success('Data servis berhasil disimpan'); setTimeout(function(){ window.location.href = '<?= BASE_URL ?>/transaksi/servis_list.php'; }, 1000); }
+        else { BMS.error(data.message || 'Gagal menyimpan'); }
     });
 }
 </script>

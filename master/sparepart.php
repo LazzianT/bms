@@ -72,7 +72,7 @@ $suppliers = mysqli_query($conn, "SELECT supplier_id, nama FROM supplier ORDER B
             </select>
             <button type="submit" class="btn btn-primary btn-sm">Filter</button>
             <?php if ($search || $supplierId || $stockFilter): ?>
-                <a href="/bms/master/sparepart.php" class="btn btn-outline-secondary btn-sm">Reset</a>
+                <a href="<?= BASE_URL ?>/master/sparepart.php" class="btn btn-outline-secondary btn-sm">Reset</a>
             <?php endif; ?>
         </form>
     </div>
@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadSuppliers() {
-    fetch('/bms/api/sparepart_action.php?action=get_suppliers')
+    fetch('<?= BASE_URL ?>/api/sparepart_action.php?action=get_suppliers')
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success) {
@@ -301,7 +301,7 @@ function openAddModal() {
 
 function openEditModal(id) {
     document.getElementById('modalTitle').textContent = 'Edit Sparepart';
-    fetch('/bms/api/sparepart_action.php?action=get&id=' + id)
+    fetch('<?= BASE_URL ?>/api/sparepart_action.php?action=get&id=' + id)
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success) {
@@ -326,7 +326,7 @@ function saveSparepart(e) {
     var formData = new FormData(form);
     formData.append('action', document.getElementById('sparepart_id').value ? 'update' : 'add');
 
-    fetch('/bms/api/sparepart_action.php', {
+    fetch('<?= BASE_URL ?>/api/sparepart_action.php', {
         method: 'POST',
         body: formData
     })
@@ -334,9 +334,10 @@ function saveSparepart(e) {
     .then(function(data) {
         if (data.success) {
             sparepartModal.hide();
-            window.location.reload();
+            BMS.success('Sparepart berhasil disimpan');
+            setTimeout(function(){ window.location.reload(); }, 800);
         } else {
-            alert(data.message || 'Terjadi kesalahan');
+            BMS.error(data.message || 'Terjadi kesalahan');
         }
     });
     return false;
@@ -349,7 +350,7 @@ function deleteSparepart(id, name) {
 }
 
 function confirmDelete() {
-    fetch('/bms/api/sparepart_action.php', {
+    fetch('<?= BASE_URL ?>/api/sparepart_action.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'action=delete&id=' + deleteId
@@ -358,9 +359,10 @@ function confirmDelete() {
     .then(function(data) {
         if (data.success) {
             deleteModal.hide();
-            window.location.reload();
+            BMS.success('Sparepart berhasil dihapus');
+            setTimeout(function(){ window.location.reload(); }, 800);
         } else {
-            alert(data.message || 'Gagal menghapus');
+            BMS.error(data.message || 'Gagal menghapus');
         }
     });
 }

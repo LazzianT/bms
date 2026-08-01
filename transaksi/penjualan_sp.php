@@ -7,7 +7,7 @@ $customers = mysqli_query($conn, "SELECT client_id, nama, telepon FROM client OR
 
 <div class="page-header">
     <h4><i class="bi bi-bag me-2"></i>Penjualan Sparepart</h4>
-    <a href="/bms/transaksi/transaksi_list.php" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Ke Transaksi</a>
+    <a href="<?= BASE_URL ?>/transaksi/transaksi_list.php" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Ke Transaksi</a>
 </div>
 
 <div class="alert alert-info small py-2 mb-4">
@@ -94,7 +94,7 @@ function loadVehicles() {
     var cid = document.getElementById('client_id').value;
     var sel = document.getElementById('vehicle_id');
     if (!cid) { sel.innerHTML = '<option value="">-- Pilih Customer dulu --</option>'; return; }
-    fetch('/bms/api/servis_action.php?action=get_vehicles&client_id='+cid).then(r=>r.json()).then(data => {
+    fetch('<?= BASE_URL ?>/api/servis_action.php?action=get_vehicles&client_id='+cid).then(r=>r.json()).then(data => {
         sel.innerHTML = '<option value="">-- Pilih Kendaraan --</option>';
         data.data.forEach(v => { sel.innerHTML += '<option value="'+v.vehicle_id+'">'+v.no_polisi+' - '+v.merk+' '+v.tipe+'</option>'; });
         if (data.data.length === 1) sel.selectedIndex = 1;
@@ -103,7 +103,7 @@ function loadVehicles() {
 
 function openSpDialog() { document.getElementById('spSearch').value=''; new bootstrap.Modal(document.getElementById('spModal')).show(); searchSp(); }
 function searchSp() {
-    fetch('/bms/api/servis_action.php?action=get_sparepart&q='+encodeURIComponent(document.getElementById('spSearch').value)).then(r=>r.json()).then(data => {
+    fetch('<?= BASE_URL ?>/api/servis_action.php?action=get_sparepart&q='+encodeURIComponent(document.getElementById('spSearch').value)).then(r=>r.json()).then(data => {
         var html='';
         data.data.forEach(s => {
             html += '<tr><td><code>'+s.kode_sparepart+'</code></td><td>'+s.nama_sparepart+'</td><td>'+s.stok+' '+s.satuan+'</td><td>Rp '+Number(s.harga_jual).toLocaleString('id-ID')+'</td>';
@@ -143,11 +143,11 @@ function hitungKembali() {
 function simpanPenjualan() {
     var clientId = document.getElementById('client_id').value;
     var vehicleId = document.getElementById('vehicle_id').value;
-    if (!clientId || !vehicleId) { alert('Pilih customer dan kendaraan'); return; }
-    if (spItems.length == 0) { alert('Tambah minimal 1 sparepart'); return; }
+    if (!clientId || !vehicleId) { BMS.warning('Pilih customer dan kendaraan'); return; }
+    if (spItems.length == 0) { BMS.warning('Tambah minimal 1 sparepart'); return; }
     var el = document.getElementById('bayar');
     var bayar = parseFloat(el.dataset.raw || el.value.replace(/[^\d]/g,'')) || 0;
-    if (bayar < grandVal) { alert('Jumlah bayar kurang dari total'); return; }
+    if (bayar < grandVal) { BMS.error('Jumlah bayar kurang dari total'); return; }
 
     var fd = new FormData();
     fd.append('action', 'save_penjualan_sp');
@@ -157,9 +157,9 @@ function simpanPenjualan() {
     fd.append('bayar', bayar);
     fd.append('sparepart', JSON.stringify(spItems.map(s => ({sparepart_id: s.id, qty: s.qty}))));
 
-    fetch('/bms/api/servis_action.php', {method:'POST', body:fd}).then(r=>r.json()).then(data => {
-        if (data.success) { alert('Penjualan berhasil disimpan!'); window.location.href='/bms/transaksi/transaksi_list.php'; }
-        else alert(data.message);
+    fetch('<?= BASE_URL ?>/api/servis_action.php', {method:'POST', body:fd}).then(r=>r.json()).then(data => {
+        if (data.success) { BMS.success('Penjualan berhasil disimpan!'); setTimeout(function(){ window.location.href='<?= BASE_URL ?>/transaksi/transaksi_list.php'; }, 1000); }
+        else BMS.error(data.message);
     });
 }
 </script>

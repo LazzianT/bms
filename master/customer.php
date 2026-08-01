@@ -37,7 +37,7 @@ $result = mysqli_query($conn, $query);
             </div>
             <button type="submit" class="btn btn-primary btn-sm">Cari</button>
             <?php if ($search): ?>
-                <a href="/bms/master/customer.php" class="btn btn-outline-secondary btn-sm">Reset</a>
+                <a href="<?= BASE_URL ?>/master/customer.php" class="btn btn-outline-secondary btn-sm">Reset</a>
             <?php endif; ?>
         </form>
     </div>
@@ -194,7 +194,7 @@ function openAddModal() {
 
 function openEditModal(id) {
     document.getElementById('modalTitle').textContent = 'Edit Customer';
-    fetch('/bms/api/customer_action.php?action=get&id=' + id)
+    fetch('<?= BASE_URL ?>/api/customer_action.php?action=get&id=' + id)
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success) {
@@ -215,7 +215,7 @@ function saveCustomer(e) {
     var formData = new FormData(form);
     formData.append('action', document.getElementById('client_id').value ? 'update' : 'add');
 
-    fetch('/bms/api/customer_action.php', {
+    fetch('<?= BASE_URL ?>/api/customer_action.php', {
         method: 'POST',
         body: formData
     })
@@ -223,9 +223,10 @@ function saveCustomer(e) {
     .then(function(data) {
         if (data.success) {
             customerModal.hide();
-            window.location.reload();
+            BMS.success('Customer berhasil disimpan');
+            setTimeout(function(){ window.location.reload(); }, 800);
         } else {
-            alert(data.message || 'Terjadi kesalahan');
+            BMS.error(data.message || 'Terjadi kesalahan');
         }
     });
     return false;
@@ -238,7 +239,7 @@ function deleteCustomer(id, name) {
 }
 
 function confirmDelete() {
-    fetch('/bms/api/customer_action.php', {
+    fetch('<?= BASE_URL ?>/api/customer_action.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'action=delete&id=' + deleteId
@@ -247,9 +248,10 @@ function confirmDelete() {
     .then(function(data) {
         if (data.success) {
             deleteModal.hide();
-            window.location.reload();
+            BMS.success('Customer berhasil dihapus');
+            setTimeout(function(){ window.location.reload(); }, 800);
         } else {
-            alert(data.message || 'Gagal menghapus');
+            BMS.error(data.message || 'Gagal menghapus');
         }
     });
 }

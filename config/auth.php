@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/config.php';
+
 session_start();
 
 function isLoggedIn() {
@@ -7,7 +9,7 @@ function isLoggedIn() {
 
 function requireLogin() {
     if (!isLoggedIn()) {
-        header("Location: /bms/auth/login.php");
+        header("Location: " . BASE_URL . "/auth/login.php");
         exit();
     }
 }
@@ -15,7 +17,7 @@ function requireLogin() {
 function requireRole($roles) {
     requireLogin();
     if (!in_array($_SESSION['role'], (array)$roles)) {
-        header("Location: /bms/dashboard.php?error=akses_ditolak");
+        header("Location: " . BASE_URL . "/dashboard.php?error=akses_ditolak");
         exit();
     }
 }
@@ -59,7 +61,7 @@ function loginUser($conn, $username, $password) {
 function logoutUser() {
     session_unset();
     session_destroy();
-    header("Location: /bms/auth/login.php");
+    header("Location: " . BASE_URL . "/auth/login.php");
     exit();
 }
 

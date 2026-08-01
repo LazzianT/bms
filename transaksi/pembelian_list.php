@@ -46,7 +46,7 @@ $spareparts = mysqli_query($conn, "SELECT sparepart_id, kode_sparepart, nama_spa
             </div>
             <button type="submit" class="btn btn-primary btn-sm">Cari</button>
             <?php if ($search): ?>
-                <a href="/bms/transaksi/pembelian_list.php" class="btn btn-outline-secondary btn-sm">Reset</a>
+                <a href="<?= BASE_URL ?>/transaksi/pembelian_list.php" class="btn btn-outline-secondary btn-sm">Reset</a>
             <?php endif; ?>
         </form>
     </div>
@@ -225,26 +225,28 @@ function savePembelian(e) {
     e.preventDefault();
     var formData = new FormData(document.getElementById('pembelianForm'));
     formData.append('action', 'add');
-    fetch('/bms/api/pembelian_action.php', { method: 'POST', body: formData })
+    fetch('<?= BASE_URL ?>/api/pembelian_action.php', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(data => {
-            if (data.success) { location.reload(); }
-            else { alert(data.message || 'Gagal menyimpan'); }
+            if (data.success) { BMS.success('Data pembelian berhasil disimpan'); setTimeout(function(){ location.reload(); }, 800); }
+            else { BMS.error(data.message || 'Gagal menyimpan'); }
         });
     return false;
 }
 
 function deletePembelian(id) {
-    if (!confirm('Yakin hapus data pembelian ini?')) return;
-    var formData = new FormData();
-    formData.append('action', 'delete');
-    formData.append('id', id);
-    fetch('/bms/api/pembelian_action.php', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) { location.reload(); }
-            else { alert(data.message || 'Gagal menghapus'); }
-        });
+    BMS.confirm('Yakin hapus data pembelian ini?').then(function(ok) {
+        if (!ok) return;
+        var formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('id', id);
+        fetch('<?= BASE_URL ?>/api/pembelian_action.php', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) { BMS.success('Data pembelian berhasil dihapus'); setTimeout(function(){ location.reload(); }, 800); }
+                else { BMS.error(data.message || 'Gagal menghapus'); }
+            });
+    });
 }
 </script>
 

@@ -37,7 +37,7 @@ $result = mysqli_query($conn, $query);
             </div>
             <button type="submit" class="btn btn-primary btn-sm">Cari</button>
             <?php if ($search): ?>
-                <a href="/bms/master/jasa.php" class="btn btn-outline-secondary btn-sm">Reset</a>
+                <a href="<?= BASE_URL ?>/master/jasa.php" class="btn btn-outline-secondary btn-sm">Reset</a>
             <?php endif; ?>
         </form>
     </div>
@@ -175,7 +175,7 @@ function openAddModal() {
 }
 
 function openEditModal(id) {
-    fetch('/bms/api/jasa_action.php?action=get&id=' + id)
+    fetch('<?= BASE_URL ?>/api/jasa_action.php?action=get&id=' + id)
         .then(r => r.json())
         .then(data => {
             if (data.success) {
@@ -199,26 +199,28 @@ function saveJasa(e) {
     if (!document.getElementById('is_aktif').checked) {
         formData.set('is_aktif', '0');
     }
-    fetch('/bms/api/jasa_action.php', { method: 'POST', body: formData })
+    fetch('<?= BASE_URL ?>/api/jasa_action.php', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(data => {
-            if (data.success) { location.reload(); }
-            else { alert(data.message); }
+            if (data.success) { BMS.success('Jasa berhasil disimpan'); setTimeout(function(){ location.reload(); }, 800); }
+            else { BMS.error(data.message); }
         });
     return false;
 }
 
 function deleteJasa(id, nama) {
-    if (!confirm('Yakin hapus jasa "' + nama + '"?')) return;
-    var formData = new FormData();
-    formData.append('action', 'delete');
-    formData.append('id', id);
-    fetch('/bms/api/jasa_action.php', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) { location.reload(); }
-            else { alert(data.message); }
-        });
+    BMS.confirm('Yakin hapus jasa "' + nama + '"?').then(function(ok) {
+        if (!ok) return;
+        var formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('id', id);
+        fetch('<?= BASE_URL ?>/api/jasa_action.php', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) { BMS.success('Jasa berhasil dihapus'); setTimeout(function(){ location.reload(); }, 800); }
+                else { BMS.error(data.message); }
+            });
+    });
 }
 </script>
 

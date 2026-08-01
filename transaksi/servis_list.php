@@ -32,7 +32,7 @@ $tabs = [
 
 <div class="page-header">
     <h4><i class="bi bi-clipboard-plus me-2"></i>Pendaftaran Servis</h4>
-    <a href="/bms/transaksi/tambah_servis.php" class="btn btn-primary">
+    <a href="<?= BASE_URL ?>/transaksi/tambah_servis.php" class="btn btn-primary">
         <i class="bi bi-plus-lg me-1"></i> Daftar Servis Baru
     </a>
 </div>
@@ -104,12 +104,12 @@ $tabs = [
                             <td>
                                 <?php if ($row['status'] == 'Registered'): ?>
                                     <button class="btn btn-sm btn-success me-1" onclick="openStartModal(<?php echo $row['registration_id']; ?>)" title="Mulai Servis"><i class="bi bi-play-fill"></i></button>
-                                    <a href="/bms/transaksi/tambah_servis.php?edit=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bi bi-pencil"></i></a>
+                                    <a href="<?= BASE_URL ?>/transaksi/tambah_servis.php?edit=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bi bi-pencil"></i></a>
                                     <button class="btn btn-sm btn-outline-danger" onclick="hapusPendaftaran(<?php echo $row['registration_id']; ?>)" title="Hapus"><i class="bi bi-trash"></i></button>
                                 <?php elseif ($row['status'] == 'InProgress'): ?>
-                                    <a href="/bms/transaksi/tambah_servis.php?edit=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Edit Detail"><i class="bi bi-pencil"></i></a>
+                                    <a href="<?= BASE_URL ?>/transaksi/tambah_servis.php?edit=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Edit Detail"><i class="bi bi-pencil"></i></a>
                                 <?php else: ?>
-                                    <a href="/bms/transaksi/detail_servis.php?id=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Lihat"><i class="bi bi-eye"></i></a>
+                                    <a href="<?= BASE_URL ?>/transaksi/detail_servis.php?id=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Lihat"><i class="bi bi-eye"></i></a>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -148,7 +148,7 @@ function openStartModal(regId) {
     document.getElementById('btnStart').disabled = true;
     document.getElementById('mekanikList').innerHTML = '<div class="text-center py-3 text-muted">Memuat...</div>';
     new bootstrap.Modal(document.getElementById('mekanikModal')).show();
-    fetch('/bms/api/servis_action.php?action=get_available_mekanik').then(r=>r.json()).then(data => {
+    fetch('<?= BASE_URL ?>/api/servis_action.php?action=get_available_mekanik').then(r=>r.json()).then(data => {
         if (data.data.length == 0) { document.getElementById('mekanikList').innerHTML = '<div class="text-center py-3 text-muted">Tidak ada mekanik available</div>'; return; }
         var html = '';
         data.data.forEach(function(m) {
@@ -165,18 +165,20 @@ function pickMk(el, id) {
 }
 function confirmStart() {
     if (!selectedMekanikId) return;
-    fetch('/bms/api/servis_action.php', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    fetch('<?= BASE_URL ?>/api/servis_action.php', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body:'action=start&registration_id='+currentRegId+'&mekanik_id='+selectedMekanikId
     }).then(r=>r.json()).then(data => {
-        if (data.success) { bootstrap.Modal.getInstance(document.getElementById('mekanikModal')).hide(); location.reload(); }
-        else alert(data.message);
+        if (data.success) { bootstrap.Modal.getInstance(document.getElementById('mekanikModal')).hide(); BMS.success('Servis dimulai'); setTimeout(function(){ location.reload(); }, 800); }
+        else BMS.error(data.message);
     });
 }
 function hapusPendaftaran(regId) {
-    if (!confirm('Hapus pendaftaran ini?')) return;
-    fetch('/bms/api/servis_action.php', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:'action=cancel_registration&registration_id='+regId
-    }).then(r=>r.json()).then(data => { if (data.success) location.reload(); else alert(data.message); });
+    BMS.confirm('Hapus pendaftaran ini?').then(function(ok) {
+        if (!ok) return;
+        fetch('<?= BASE_URL ?>/api/servis_action.php', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:'action=cancel_registration&registration_id='+regId
+        }).then(r=>r.json()).then(data => { if (data.success) { BMS.success('Pendaftaran dihapus'); setTimeout(function(){ location.reload(); }, 800); } else BMS.error(data.message); });
+    });
 }
 </script>
 

@@ -4,7 +4,7 @@ requireRole(['admin', 'kasir']);
 
 $reg_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if (!$reg_id) {
-    header('Location: /bms/transaksi/servis_list.php');
+    header('Location: ' . BASE_URL . '/transaksi/servis_list.php');
     exit();
 }
 
@@ -21,7 +21,7 @@ $reg = mysqli_fetch_assoc(mysqli_query($conn, "
     WHERE tp.registration_id = $reg_id
 "));
 if (!$reg) {
-    header('Location: /bms/transaksi/servis_list.php');
+    header('Location: ' . BASE_URL . '/transaksi/servis_list.php');
     exit();
 }
 
@@ -57,7 +57,7 @@ $isLunas    = $reg['status_servis'] == 'Selesai Lunas';
                 <i class="bi bi-check-lg me-1"></i> Selesai
             </button>
         <?php endif; ?>
-        <a href="/bms/transaksi/servis_list.php" class="btn btn-outline-secondary">
+        <a href="<?= BASE_URL ?>/transaksi/servis_list.php" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Kembali
         </a>
     </div>
@@ -398,7 +398,7 @@ function openTambahPart() {
 }
 
 function loadAllSparepart() {
-    fetch('/bms/api/servis_action.php?action=get_sparepart&q=')
+    fetch('<?= BASE_URL ?>/api/servis_action.php?action=get_sparepart&q=')
         .then(r => r.json())
         .then(data => {
             allSpData = data.data;
@@ -508,24 +508,26 @@ function removeSelected(idx) {
 }
 
 function simpanSparepartBatch() {
-    if (selectedSpItems.length == 0) { alert('Pilih minimal 1 sparepart'); return; }
+    if (selectedSpItems.length == 0) { BMS.warning('Pilih minimal 1 sparepart'); return; }
     var items = selectedSpItems.map(function(item) { return { sparepart_id: item.id, qty: item.qty }; });
     var formData = new FormData();
     formData.append('action', 'add_sparepart_batch');
     formData.append('trans_id', transId);
     formData.append('items', JSON.stringify(items));
-    fetch('/bms/api/servis_action.php', { method: 'POST', body: formData })
+    fetch('<?= BASE_URL ?>/api/servis_action.php', { method: 'POST', body: formData })
         .then(r => r.json())
-        .then(data => { if (data.success) reloadPage(); else alert(data.message); });
+        .then(data => { if (data.success) { BMS.success('Berhasil disimpan'); setTimeout(reloadPage, 800); } else BMS.error(data.message); });
 }
 
 function hapusSparepart(detailId) {
-    if (!confirm('Hapus sparepart ini?')) return;
-    fetch('/bms/api/servis_action.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=delete_sparepart&detail_id=' + detailId + '&trans_id=' + transId
-    }).then(r => r.json()).then(data => { if (data.success) reloadPage(); else alert(data.message); });
+    BMS.confirm('Hapus sparepart ini?').then(function(ok) {
+        if (!ok) return;
+        fetch('<?= BASE_URL ?>/api/servis_action.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'action=delete_sparepart&detail_id=' + detailId + '&trans_id=' + transId
+        }).then(r => r.json()).then(data => { if (data.success) { BMS.success('Sparepart dihapus'); setTimeout(reloadPage, 800); } else BMS.error(data.message); });
+    });
 }
 
 // ==================== JASA ====================
@@ -542,20 +544,22 @@ function addJasa() {
     var hargaEl = document.getElementById('jasaHargaInput');
     var harga = parseFloat(hargaEl.dataset.raw || hargaEl.value.replace(/[^\d]/g, '')) || 0;
     var qty = document.getElementById('jasaQty').value;
-    if (!nama || harga <= 0) { alert('Nama jasa dan harga wajib diisi'); return; }
-    fetch('/bms/api/servis_action.php', {
+    if (!nama || harga <= 0) { BMS.warning('Nama jasa dan harga wajib diisi'); return; }
+    fetch('<?= BASE_URL ?>/api/servis_action.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'action=add_jasa&trans_id=' + transId + '&nama_jasa=' + encodeURIComponent(nama) + '&harga=' + harga + '&qty=' + qty
-    }).then(r => r.json()).then(data => { if (data.success) reloadPage(); else alert(data.message); });
+    }).then(r => r.json()).then(data => { if (data.success) reloadPage(); else BMS.error(data.message); });
 }
 function hapusJasa(detailId) {
-    if (!confirm('Hapus jasa ini?')) return;
-    fetch('/bms/api/servis_action.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=delete_jasa&detail_id=' + detailId + '&trans_id=' + transId
-    }).then(r => r.json()).then(data => { if (data.success) reloadPage(); else alert(data.message); });
+    BMS.confirm('Hapus jasa ini?').then(function(ok) {
+        if (!ok) return;
+        fetch('<?= BASE_URL ?>/api/servis_action.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'action=delete_jasa&detail_id=' + detailId + '&trans_id=' + transId
+        }).then(r => r.json()).then(data => { if (data.success) { BMS.success('Jasa dihapus'); setTimeout(reloadPage, 800); } else BMS.error(data.message); });
+    });
 }
 
 // ==================== MEKANIK & START ====================
@@ -565,7 +569,7 @@ function openStartModal() {
     document.getElementById('btnStart').disabled = true;
     document.getElementById('mekanikList').innerHTML = '<div class="text-center py-3 text-muted">Memuat...</div>';
     new bootstrap.Modal(document.getElementById('mekanikModal')).show();
-    fetch('/bms/api/servis_action.php?action=get_available_mekanik')
+    fetch('<?= BASE_URL ?>/api/servis_action.php?action=get_available_mekanik')
         .then(r => r.json())
         .then(data => {
             if (data.data.length == 0) {
@@ -590,23 +594,25 @@ function pickMekanik(el, id) {
 }
 function confirmStart() {
     if (!selectedMekanikId) return;
-    fetch('/bms/api/servis_action.php', {
+    fetch('<?= BASE_URL ?>/api/servis_action.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'action=start&registration_id=<?php echo $reg_id; ?>&mekanik_id=' + selectedMekanikId
     }).then(r => r.json()).then(data => {
-        if (data.success) { bootstrap.Modal.getInstance(document.getElementById('mekanikModal')).hide(); reloadPage(); }
-        else alert(data.message);
+        if (data.success) { bootstrap.Modal.getInstance(document.getElementById('mekanikModal')).hide(); BMS.success('Servis dimulai'); setTimeout(reloadPage, 800); }
+        else BMS.error(data.message);
     });
 }
 
 function setSelesai() {
-    if (!confirm('Tandai servis ini sebagai Selesai?')) return;
-    fetch('/bms/api/servis_action.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=set_selesai&trans_id=' + transId
-    }).then(r => r.json()).then(data => { if (data.success) reloadPage(); else alert(data.message); });
+    BMS.confirm('Tandai servis ini sebagai Selesai?').then(function(ok) {
+        if (!ok) return;
+        fetch('<?= BASE_URL ?>/api/servis_action.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'action=set_selesai&trans_id=' + transId
+        }).then(r => r.json()).then(data => { if (data.success) { BMS.success('Servis selesai'); setTimeout(reloadPage, 800); } else BMS.error(data.message); });
+    });
 }
 
 // ==================== PEMBAYARAN ====================
@@ -622,14 +628,14 @@ function prosesBayar(e) {
     var el = document.getElementById('inputBayar');
     var bayar = parseFloat(el.dataset.raw || el.value.replace(/[^\d]/g, '')) || 0;
     var metode = document.getElementById('metodeBayar').value;
-    if (parseFloat(bayar) < grandTotalVal) { alert('Jumlah bayar kurang dari grand total'); return false; }
-    fetch('/bms/api/servis_action.php', {
+    if (parseFloat(bayar) < grandTotalVal) { BMS.error('Jumlah bayar kurang dari grand total'); return false; }
+    fetch('<?= BASE_URL ?>/api/servis_action.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'action=bayar&trans_id=' + transId + '&bayar=' + bayar + '&metode_bayar=' + metode
     }).then(r => r.json()).then(data => {
-        if (data.success) { alert('Pembayaran berhasil! Kembalian: Rp ' + Number(data.kembali).toLocaleString('id-ID')); reloadPage(); }
-        else alert(data.message);
+        if (data.success) { BMS.success('Pembayaran berhasil! Kembalian: Rp ' + Number(data.kembali).toLocaleString('id-ID')); setTimeout(reloadPage, 1200); }
+        else BMS.error(data.message);
     });
     return false;
 }

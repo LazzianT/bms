@@ -37,7 +37,7 @@ $result = mysqli_query($conn, $query);
             </div>
             <button type="submit" class="btn btn-primary btn-sm">Cari</button>
             <?php if ($search): ?>
-                <a href="/bms/master/supplier.php" class="btn btn-outline-secondary btn-sm">Reset</a>
+                <a href="<?= BASE_URL ?>/master/supplier.php" class="btn btn-outline-secondary btn-sm">Reset</a>
             <?php endif; ?>
         </form>
     </div>
@@ -192,7 +192,7 @@ function openAddModal() {
 
 function openEditModal(id) {
     document.getElementById('modalTitle').textContent = 'Edit Supplier';
-    fetch('/bms/api/supplier_action.php?action=get&id=' + id)
+    fetch('<?= BASE_URL ?>/api/supplier_action.php?action=get&id=' + id)
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success) {
@@ -213,7 +213,7 @@ function saveSupplier(e) {
     var formData = new FormData(form);
     formData.append('action', document.getElementById('supplier_id').value ? 'update' : 'add');
 
-    fetch('/bms/api/supplier_action.php', {
+    fetch('<?= BASE_URL ?>/api/supplier_action.php', {
         method: 'POST',
         body: formData
     })
@@ -221,9 +221,10 @@ function saveSupplier(e) {
     .then(function(data) {
         if (data.success) {
             supplierModal.hide();
-            window.location.reload();
+            BMS.success('Supplier berhasil disimpan');
+            setTimeout(function(){ window.location.reload(); }, 800);
         } else {
-            alert(data.message || 'Terjadi kesalahan');
+            BMS.error(data.message || 'Terjadi kesalahan');
         }
     });
     return false;
@@ -236,7 +237,7 @@ function deleteSupplier(id, name) {
 }
 
 function confirmDelete() {
-    fetch('/bms/api/supplier_action.php', {
+    fetch('<?= BASE_URL ?>/api/supplier_action.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'action=delete&id=' + deleteId
@@ -245,9 +246,10 @@ function confirmDelete() {
     .then(function(data) {
         if (data.success) {
             deleteModal.hide();
-            window.location.reload();
+            BMS.success('Supplier berhasil dihapus');
+            setTimeout(function(){ window.location.reload(); }, 800);
         } else {
-            alert(data.message || 'Gagal menghapus');
+            BMS.error(data.message || 'Gagal menghapus');
         }
     });
 }

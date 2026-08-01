@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 
 if (isLoggedIn()) {
-    header("Location: /bms/dashboard.php");
+    header("Location: " . BASE_URL . "/dashboard.php");
     exit();
 }
 
@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
 
     if (loginUser($conn, $username, $password)) {
-        header("Location: /bms/dashboard.php");
+        header("Location: " . BASE_URL . "/dashboard.php");
         exit();
     } else {
         $error = 'Username atau password salah!';
@@ -26,9 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - BMS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="/bms/assets/css/style.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
 </head>
 <body class="login-page">
     <div class="login-split">
@@ -64,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="login-right">
             <div class="login-form-wrapper">
                 <div class="login-form-header">
-                    <h2>Selamat datang</h2>
+                    <h2>Selamat datang 👋</h2>
                     <p>Masuk ke akun Anda untuk melanjutkan</p>
                 </div>
 
