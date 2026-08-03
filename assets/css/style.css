@@ -79,7 +79,7 @@ a { text-decoration: none; }
     display: flex;
     flex-direction: column;
     transition: all .3s ease;
-    z-index: 1030;
+    z-index: 100;
     overflow-y: auto;
     overflow-x: hidden;
     box-shadow: 4px 0 30px rgba(5,11,24,.25);
@@ -240,7 +240,7 @@ a { text-decoration: none; }
 .top-navbar {
     position: sticky;
     top: 0;
-    z-index: 1020;
+    z-index: 99;
     background: rgba(255,255,255,.75);
     backdrop-filter: blur(14px) saturate(1.4);
     -webkit-backdrop-filter: blur(14px) saturate(1.4);
@@ -285,7 +285,8 @@ a { text-decoration: none; }
 
 @keyframes fadeUp {
     from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
+    /* no transform in final state — avoids creating a permanent stacking context */
+    to   { opacity: 1; }
 }
 
 .container-fluid.flex-grow-1 { flex: 1; }
@@ -639,6 +640,10 @@ a { text-decoration: none; }
 /* ============ Modals ============ */
 .modal.fade .modal-dialog { transition: transform .25s cubic-bezier(.2,.9,.3,1.2), opacity .2s; transform: translateY(24px) scale(.97); }
 .modal.show .modal-dialog { transform: translateY(0) scale(1); }
+
+/* must be above sidebar (100) and navbar (99) */
+.modal-backdrop { z-index: 1040 !important; }
+.modal { z-index: 1050 !important; }
 
 .modal-backdrop.show { opacity: .45; backdrop-filter: blur(2px); }
 
@@ -1201,7 +1206,7 @@ a { text-decoration: none; }
         position: fixed;
         left: calc(-1 * var(--sidebar-width));
         top: 0;
-        z-index: 1050;
+        z-index: 200;
         height: 100vh;
     }
     .sidebar.show { left: 0; }
