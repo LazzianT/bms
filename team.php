@@ -7,14 +7,16 @@ requireRole(['admin', 'kasir', 'manager']);
 // Foto: taruh file di folder assets/img lalu isi 'foto' => 'assets/img/nama.jpg'
 // Jika 'foto' dikosongkan, otomatis tampil avatar inisial berwarna.
 $project_nama = 'BMS - Bengkel Management System';
-$project_url  = 'https://';
+$project_url  = BASE_URL . '/';
 
+// foto: simpan file ke assets/img/ dengan nama sesuai kolom 'foto'
 $team = [
-    ['nama' => 'Anggota 1', 'nim' => '12345', 'peran' => 'Ketua',   'foto' => '', 'warna' => '#f97316'],
-    ['nama' => 'Anggota 2', 'nim' => '12345', 'peran' => 'Anggota', 'foto' => '', 'warna' => '#0891b2'],
-    ['nama' => 'Anggota 3', 'nim' => '12345', 'peran' => 'Anggota', 'foto' => '', 'warna' => '#059669'],
-    ['nama' => 'Anggota 4', 'nim' => '12345', 'peran' => 'Anggota', 'foto' => '', 'warna' => '#8b5cf6'],
-    ['nama' => 'Anggota 5', 'nim' => '12345', 'peran' => 'Anggota', 'foto' => '', 'warna' => '#0ea5e9'],
+    ['nama' => 'Zinedine Ziddan Fahdlevy', 'nim' => '',  'peran' => 'Ketua',   'foto' => 'assets/img/zinedine.jpg',  'warna' => '#f97316', 'project' => 'projects/zinedine-ziddan-fahdlevy?page=biodata'],
+    ['nama' => 'Dela Ramadani',            'nim' => '',  'peran' => 'Anggota', 'foto' => 'assets/img/dela.jpg',      'warna' => '#0891b2', 'project' => 'projects/dela-ramadani/'],
+    ['nama' => 'Haura Nahdah',             'nim' => '',  'peran' => 'Anggota', 'foto' => 'assets/img/haura.jpg',     'warna' => '#059669', 'project' => 'projects/haura-nahdah/biodata.html'],
+    ['nama' => 'Izra Ilham',               'nim' => '',  'peran' => 'Anggota', 'foto' => 'assets/img/izra.jpg',      'warna' => '#8b5cf6', 'project' => 'projects/izra-ilham/'],
+    ['nama' => 'Lazzian Alfalah',          'nim' => '',  'peran' => 'Anggota', 'foto' => 'assets/img/lazzian.jpg',   'warna' => '#ef4444', 'project' => 'projects/lazzian-alfalah/'],
+    ['nama' => 'Syanaia Lulailika',        'nim' => '',  'peran' => 'Anggota', 'foto' => 'assets/img/syanaia.jpg',   'warna' => '#0ea5e9', 'project' => 'projects/syanaia-lulailika/home.php'],
 ];
 
 function teamInitials($nama) {
@@ -33,10 +35,10 @@ function teamInitials($nama) {
 <!-- ====================== PROJECT BANNER ====================== -->
 <div class="team-hero mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
     <div>
-        <h5 class="mb-1 fw-bold"><i class="bi bi-link-45deg me-2"></i>Project Kelompok</h5>
+        <h5 class="mb-1 fw-bold"><i class="bi bi-tools me-2"></i>Project Kelompok</h5>
         <p class="mb-0 opacity-75"><?php echo htmlspecialchars($project_nama); ?></p>
     </div>
-    <a href="<?php echo htmlspecialchars($project_url); ?>" target="_blank" rel="noopener" class="btn btn-primary btn-lg">
+    <a href="<?php echo htmlspecialchars($project_url); ?>" class="btn btn-primary btn-lg">
         <i class="bi bi-box-arrow-up-right me-1"></i> Lihat Project
     </a>
 </div>
@@ -44,7 +46,7 @@ function teamInitials($nama) {
 <!-- ====================== MEMBER CARDS ====================== -->
 <div class="row g-3">
     <?php foreach ($team as $m): ?>
-    <div class="col-md-6 col-lg-3">
+    <div class="col-md-6 col-lg-4">
         <div class="card team-card h-100">
             <div class="team-cover"></div>
 
@@ -61,7 +63,11 @@ function teamInitials($nama) {
                     <div class="team-nim"><?php echo htmlspecialchars($m['nim']); ?></div>
                 <?php endif; ?>
                 <div class="team-divider"></div>
-                <a class="team-mail" href="mailto:"><i class="bi bi-envelope me-1"></i>Hubungi</a>
+                <?php if (!empty($m['project'])): ?>
+                    <a class="btn btn-sm btn-primary w-100 mt-1" href="<?= BASE_URL ?>/<?php echo htmlspecialchars($m['project']); ?>" target="_blank">
+                        <i class="bi bi-folder2-open me-1"></i>Lihat Project
+                    </a>
+                <?php endif; ?>
             </div>
         </div>
     </div>
