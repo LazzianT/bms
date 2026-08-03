@@ -11,8 +11,8 @@ $project_url  = BASE_URL . '/';
 
 // foto: simpan file ke assets/img/ dengan nama sesuai kolom 'foto'
 $team = [
-    ['nama' => 'Zinedine Ziddan Fahdlevy', 'nim' => '',  'peran' => 'Ketua',   'foto' => 'assets/img/zinedine.jpg',  'warna' => '#f97316', 'project' => 'projects/zinedine-ziddan-fahdlevy?page=biodata'],
     ['nama' => 'Dela Ramadani',            'nim' => '',  'peran' => 'Anggota', 'foto' => 'assets/img/dela.jpg',      'warna' => '#0891b2', 'project' => 'projects/dela-ramadani/'],
+    ['nama' => 'Zinedine Ziddan Fahdlevy', 'nim' => '',  'peran' => 'Anggota',   'foto' => 'assets/img/zinedine.jpg',  'warna' => '#f97316', 'project' => 'projects/zinedine-ziddan-fahdlevy?page=biodata'],
     ['nama' => 'Haura Nahdah',             'nim' => '',  'peran' => 'Anggota', 'foto' => 'assets/img/haura.jpg',     'warna' => '#059669', 'project' => 'projects/haura-nahdah/biodata.html'],
     ['nama' => 'Izra Ilham',               'nim' => '',  'peran' => 'Anggota', 'foto' => 'assets/img/izra.jpg',      'warna' => '#8b5cf6', 'project' => 'projects/izra-ilham/'],
     ['nama' => 'Lazzian Alfalah',          'nim' => '',  'peran' => 'Anggota', 'foto' => 'assets/img/lazzian.jpg',   'warna' => '#ef4444', 'project' => 'projects/lazzian-alfalah/'],
