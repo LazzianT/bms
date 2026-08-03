@@ -61,19 +61,6 @@ switch ($action) {
         echo json_encode(['success' => true, 'data' => $data]);
         break;
 
-    case 'get_jasa':
-        $q = isset($_GET['q']) ? sanitize($conn, $_GET['q']) : '';
-        $where = $q ? "WHERE nama_jasa LIKE '%$q%' AND is_aktif = 1" : "WHERE is_aktif = 1";
-        $result = mysqli_query($conn, "SELECT jasa_id, nama_jasa, harga FROM master_jasa $where ORDER BY nama_jasa LIMIT 20");
-        $data = [];
-        if ($result) {
-            while ($row = mysqli_fetch_assoc($result)) {
-                $data[] = $row;
-            }
-        }
-        echo json_encode(['success' => true, 'data' => $data]);
-        break;
-
     case 'get_available_mekanik':
         $result = mysqli_query($conn, "
             SELECT m.mekanik_id, m.nama, m.spesialis
@@ -153,8 +140,6 @@ switch ($action) {
         $mekanik_id = (int)$_POST['mekanik_id'];
         $keluhan    = sanitize($conn, $_POST['keluhan']);
         $catatan    = sanitize($conn, $_POST['catatan']);
-        $jasaList   = json_decode($_POST['jasa'], true) ?: [];
-        $spList     = json_decode($_POST['sparepart'], true) ?: [];
 
         if ($client_id == 0 || $vehicle_id == 0 || empty($keluhan)) {
             echo json_encode(['success' => false, 'message' => 'Customer, kendaraan, dan keluhan wajib diisi']);
@@ -164,44 +149,14 @@ switch ($action) {
         $now = date('Y-m-d H:i:s');
         mysqli_begin_transaction($conn);
         try {
-            // 1. Registration
             $mekVal = $mekanik_id > 0 ? $mekanik_id : 'NULL';
             mysqli_query($conn, "INSERT INTO transaksi_pendaftaran (client_id, vehicle_id, keluhan, mekanik_id, status, tanggal_daftar, catatan) VALUES ($client_id, $vehicle_id, '$keluhan', $mekVal, 'Registered', '$now', '$catatan')");
             $reg_id = mysqli_insert_id($conn);
 
-            // 2. Transaction header
-            $totalJasa = 0; $totalSp = 0;
-            foreach ($jasaList as $j) $totalJasa += ($j['harga'] * ($j['qty'] ?? 1));
-            foreach ($spList as $s) {
-                $sp = mysqli_fetch_assoc(mysqli_query($conn, "SELECT harga_jual FROM sparepart WHERE sparepart_id = " . (int)$s['sparepart_id']));
-                $totalSp += ($sp['harga_jual'] * $s['qty']);
-            }
-            $grand = $totalJasa + $totalSp;
-
-            mysqli_query($conn, "INSERT INTO transaksi_servis (tanggal, client_id, vehicle_id, mekanik_id, registration_id, keluhan, status_servis, total_jasa, total_sparepart, grand_total) VALUES ('$now', $client_id, $vehicle_id, $mekVal, $reg_id, '$keluhan', 'Menunggu', $totalJasa, $totalSp, $grand)");
-            $trans_id = mysqli_insert_id($conn);
-
-            // 3. Jasa details
-            foreach ($jasaList as $j) {
-                $jNama = sanitize($conn, $j['nama_jasa']);
-                $jHarga = (double)$j['harga'];
-                $jQty = max(1, (int)($j['qty'] ?? 1));
-                $jSub = $jHarga * $jQty;
-                mysqli_query($conn, "INSERT INTO transaksi_servis_jasa (trans_id, nama_jasa, harga, qty, subtotal) VALUES ($trans_id, '$jNama', $jHarga, $jQty, $jSub)");
-            }
-
-            // 4. Sparepart details
-            foreach ($spList as $s) {
-                $spId = (int)$s['sparepart_id'];
-                $qty = (int)$s['qty'];
-                $sp = mysqli_fetch_assoc(mysqli_query($conn, "SELECT harga_jual, stok FROM sparepart WHERE sparepart_id = $spId"));
-                $harga = $sp['harga_jual'];
-                $sub = $harga * $qty;
-                mysqli_query($conn, "INSERT INTO transaksi_servis_detail (trans_id, sparepart_id, qty, harga, subtotal) VALUES ($trans_id, $spId, $qty, $harga, $sub)");
-            }
+            mysqli_query($conn, "INSERT INTO transaksi_servis (tanggal, client_id, vehicle_id, mekanik_id, registration_id, keluhan, status_servis, total_jasa, total_sparepart, grand_total, bayar, kembali) VALUES ('$now', $client_id, $vehicle_id, $mekVal, $reg_id, '$keluhan', 'Menunggu', 0, 0, 0, 0, 0)");
 
             mysqli_commit($conn);
-            echo json_encode(['success' => true, 'message' => 'Servis berhasil didaftarkan']);
+            echo json_encode(['success' => true, 'message' => 'Pendaftaran servis berhasil disimpan']);
         } catch (Exception $e) {
             mysqli_rollback($conn);
             echo json_encode(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()]);
@@ -210,88 +165,24 @@ switch ($action) {
 
     case 'save_wizard_edit':
         $reg_id     = (int)$_POST['registration_id'];
-        $trans_id   = (int)$_POST['trans_id'];
         $client_id  = (int)$_POST['client_id'];
         $vehicle_id = (int)$_POST['vehicle_id'];
         $mekanik_id = (int)$_POST['mekanik_id'];
         $keluhan    = sanitize($conn, $_POST['keluhan']);
         $catatan    = sanitize($conn, $_POST['catatan']);
-        $jasaList   = json_decode($_POST['jasa'], true) ?: [];
-        $spList     = json_decode($_POST['sparepart'], true) ?: [];
 
         mysqli_begin_transaction($conn);
         try {
             $mekVal = $mekanik_id > 0 ? $mekanik_id : 'NULL';
-            // Update registration
             mysqli_query($conn, "UPDATE transaksi_pendaftaran SET client_id=$client_id, vehicle_id=$vehicle_id, keluhan='$keluhan', mekanik_id=$mekVal, catatan='$catatan' WHERE registration_id=$reg_id");
 
-            // Clear old details
-            mysqli_query($conn, "DELETE FROM transaksi_servis_jasa WHERE trans_id = $trans_id");
-            mysqli_query($conn, "DELETE FROM transaksi_servis_detail WHERE trans_id = $trans_id");
-
-            // Recalc totals
-            $totalJasa = 0; $totalSp = 0;
-            foreach ($jasaList as $j) $totalJasa += ($j['harga'] * ($j['qty'] ?? 1));
-            foreach ($spList as $s) {
-                $sp = mysqli_fetch_assoc(mysqli_query($conn, "SELECT harga_jual FROM sparepart WHERE sparepart_id = " . (int)$s['sparepart_id']));
-                $totalSp += ($sp['harga_jual'] * $s['qty']);
-            }
-            $grand = $totalJasa + $totalSp;
-
-            mysqli_query($conn, "UPDATE transaksi_servis SET client_id=$client_id, vehicle_id=$vehicle_id, mekanik_id=$mekVal, keluhan='$keluhan', total_jasa=$totalJasa, total_sparepart=$totalSp, grand_total=$grand WHERE trans_id=$trans_id");
-
-            // Re-insert jasa
-            foreach ($jasaList as $j) {
-                $jNama = sanitize($conn, $j['nama_jasa']);
-                $jHarga = (double)$j['harga'];
-                $jQty = max(1, (int)($j['qty'] ?? 1));
-                mysqli_query($conn, "INSERT INTO transaksi_servis_jasa (trans_id, nama_jasa, harga, qty, subtotal) VALUES ($trans_id, '$jNama', $jHarga, $jQty, " . ($jHarga * $jQty) . ")");
-            }
-            // Re-insert sparepart
-            foreach ($spList as $s) {
-                $spId = (int)$s['sparepart_id'];
-                $qty = (int)$s['qty'];
-                $sp = mysqli_fetch_assoc(mysqli_query($conn, "SELECT harga_jual FROM sparepart WHERE sparepart_id = $spId"));
-                $harga = $sp['harga_jual'];
-                mysqli_query($conn, "INSERT INTO transaksi_servis_detail (trans_id, sparepart_id, qty, harga, subtotal) VALUES ($trans_id, $spId, $qty, $harga, " . ($harga * $qty) . ")");
-            }
+            mysqli_query($conn, "UPDATE transaksi_servis SET client_id=$client_id, vehicle_id=$vehicle_id, mekanik_id=$mekVal, keluhan='$keluhan' WHERE registration_id=$reg_id");
 
             mysqli_commit($conn);
-            echo json_encode(['success' => true, 'message' => 'Detail servis berhasil diupdate']);
+            echo json_encode(['success' => true, 'message' => 'Pendaftaran servis berhasil diupdate']);
         } catch (Exception $e) {
             mysqli_rollback($conn);
             echo json_encode(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()]);
-        }
-        break;
-
-    case 'add_registration':
-        $client_id   = (int)$_POST['client_id'];
-        $vehicle_id  = (int)$_POST['vehicle_id'];
-        $keluhan     = sanitize($conn, $_POST['keluhan']);
-        $catatan     = sanitize($conn, $_POST['catatan']);
-
-        if ($client_id == 0 || $vehicle_id == 0 || empty($keluhan)) {
-            echo json_encode(['success' => false, 'message' => 'Customer, kendaraan, dan keluhan wajib diisi']);
-            exit();
-        }
-
-        $now = date('Y-m-d H:i:s');
-
-        // Buat pendaftaran
-        $query = "INSERT INTO transaksi_pendaftaran (client_id, vehicle_id, keluhan, status, tanggal_daftar, catatan)
-                  VALUES ($client_id, $vehicle_id, '$keluhan', 'Registered', '$now', '$catatan')";
-        $result = mysqli_query($conn, $query);
-        $reg_id = mysqli_insert_id($conn);
-
-        if ($result && $reg_id) {
-            // Buat transaksi_servis langsung (status Menunggu, mekanik NULL)
-            $ts = "INSERT INTO transaksi_servis (tanggal, client_id, vehicle_id, registration_id, keluhan, status_servis)
-                   VALUES ('$now', $client_id, $vehicle_id, $reg_id, '$keluhan', 'Menunggu')";
-            mysqli_query($conn, $ts);
-
-            echo json_encode(['success' => true, 'message' => 'Pendaftaran servis berhasil', 'id' => $reg_id]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan: ' . mysqli_error($conn)]);
         }
         break;
 
@@ -344,44 +235,6 @@ switch ($action) {
         mysqli_query($conn, "DELETE FROM transaksi_pendaftaran WHERE registration_id = $reg_id");
 
         echo json_encode(['success' => true, 'message' => 'Pendaftaran dibatalkan']);
-        break;
-
-    // ==================== SPAREPART ====================
-
-    case 'add_sparepart':
-        $trans_id = (int)$_POST['trans_id'];
-        $sparepart_id = (int)$_POST['sparepart_id'];
-        $qty = (int)$_POST['qty'];
-
-        if ($qty <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Qty harus lebih dari 0']);
-            exit();
-        }
-
-        $sp = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM sparepart WHERE sparepart_id = $sparepart_id"));
-        if (!$sp) {
-            echo json_encode(['success' => false, 'message' => 'Sparepart tidak ditemukan']);
-            exit();
-        }
-        if ($sp['stok'] < $qty) {
-            echo json_encode(['success' => false, 'message' => 'Stok tidak cukup (stok: ' . $sp['stok'] . ')']);
-            exit();
-        }
-
-        $harga = $sp['harga_jual'];
-        $subtotal = $qty * $harga;
-
-        $ins = "INSERT INTO transaksi_servis_detail (trans_id, sparepart_id, qty, harga, subtotal)
-                VALUES ($trans_id, $sparepart_id, $qty, $harga, $subtotal)";
-        $result = mysqli_query($conn, $ins);
-
-        if ($result) {
-            // Update totals
-            recalcTotal($conn, $trans_id);
-            echo json_encode(['success' => true, 'message' => 'Sparepart berhasil ditambahkan']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Gagal: ' . mysqli_error($conn)]);
-        }
         break;
 
     case 'add_sparepart_batch':

@@ -8,6 +8,7 @@ $search = isset($_GET['search']) ? sanitize($conn, $_GET['search']) : '';
 $where = "WHERE 1=1";
 if ($filter == 'Menunggu')       $where .= " AND ts.status_servis = 'Menunggu'";
 elseif ($filter == 'Dikerjakan') $where .= " AND ts.status_servis = 'Dikerjakan'";
+elseif ($filter == 'Selesai')    $where .= " AND ts.status_servis = 'Selesai'";
 elseif ($filter == 'Lunas')      $where .= " AND ts.status_servis = 'Selesai Lunas'";
 
 if ($search) {
@@ -27,6 +28,7 @@ $tabs = [
     'all'        => ['label' => 'Semua',      'icon' => 'bi-list-ul'],
     'Menunggu'   => ['label' => 'Menunggu',   'icon' => 'bi-hourglass-split'],
     'Dikerjakan' => ['label' => 'Dikerjakan', 'icon' => 'bi-gear'],
+    'Selesai'    => ['label' => 'Selesai',    'icon' => 'bi-check2-circle'],
     'Lunas'      => ['label' => 'Lunas',      'icon' => 'bi-check-circle'],
 ];
 ?>
@@ -99,11 +101,8 @@ $tabs = [
                             <td class="fw-bold"><?php echo formatRupiah($row['grand_total']); ?></td>
                             <td><?php echo setStatusBadge($row['status_servis']); ?></td>
                             <td>
-                                <?php if ($row['status_servis'] == 'Dikerjakan'): ?>
-                                    <a href="<?= BASE_URL ?>/transaksi/tambah_servis.php?edit=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary me-1" title="Edit Detail"><i class="bi bi-pencil"></i></a>
-                                    <button class="btn btn-sm btn-success" onclick="openBayarModal(<?php echo $row['trans_id']; ?>, <?php echo $row['grand_total']; ?>)" title="Selesaikan & Bayar"><i class="bi bi-cash-stack"></i></button>
-                                <?php elseif ($row['status_servis'] == 'Menunggu'): ?>
-                                    <a href="<?= BASE_URL ?>/transaksi/tambah_servis.php?edit=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Edit Detail"><i class="bi bi-pencil"></i></a>
+                                <?php if (in_array($row['status_servis'], ['Menunggu', 'Dikerjakan', 'Selesai'])): ?>
+                                    <a href="<?= BASE_URL ?>/transaksi/detail_servis.php?id=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Kelola Transaksi"><i class="bi bi-pencil-square"></i></a>
                                 <?php else: ?>
                                     <a href="<?= BASE_URL ?>/transaksi/detail_servis.php?id=<?php echo $row['registration_id']; ?>" class="btn btn-sm btn-outline-primary" title="Lihat Detail"><i class="bi bi-eye"></i></a>
                                 <?php endif; ?>
@@ -119,70 +118,7 @@ $tabs = [
     </div>
 </div>
 
-<!-- Modal Bayar -->
-<div class="modal fade" id="bayarModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius:14px;border:none;">
-            <div class="modal-header"><h6 class="modal-title fw-bold">Selesaikan & Bayar</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <div class="mb-3 text-center">
-                    <small class="text-muted">Grand Total</small>
-                    <h3 class="text-primary mb-0" id="bayarGrandTotal">Rp 0</h3>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Metode Bayar</label>
-                    <select class="form-select" id="bayarMetode">
-                        <option value="Cash">Cash</option>
-                        <option value="Transfer">Transfer</option>
-                        <option value="QRIS">QRIS</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Jumlah Bayar</label>
-                    <input type="number" class="form-control" id="bayarJumlah" min="0" oninput="hitungKembali()">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Kembalian</label>
-                    <input type="text" class="form-control" id="bayarKembali" readonly value="Rp 0">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                <button type="button" class="btn btn-success" onclick="prosesBayar()"><i class="bi bi-check-lg me-1"></i> Proses Bayar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-var currentTransId = 0, currentGrand = 0;
-
-function openBayarModal(transId, grand) {
-    currentTransId = transId; currentGrand = grand;
-    document.getElementById('bayarGrandTotal').textContent = 'Rp ' + Number(grand).toLocaleString('id-ID');
-    document.getElementById('bayarJumlah').value = '';
-    document.getElementById('bayarKembali').value = 'Rp 0';
-    new bootstrap.Modal(document.getElementById('bayarModal')).show();
-}
-
-function hitungKembali() {
-    var el = document.getElementById('bayarJumlah');
-    var bayar = parseFloat(el.dataset.raw || el.value.replace(/[^\d]/g, '')) || 0;
-    document.getElementById('bayarKembali').value = 'Rp ' + Math.max(0, bayar - currentGrand).toLocaleString('id-ID');
-}
-
-function prosesBayar() {
-    var el = document.getElementById('bayarJumlah');
-    var bayar = parseFloat(el.dataset.raw || el.value.replace(/[^\d]/g, '')) || 0;
-    if (bayar < currentGrand) { BMS.error('Jumlah bayar kurang dari grand total'); return; }
-    var metode = document.getElementById('bayarMetode').value;
-    fetch('<?= BASE_URL ?>/api/servis_action.php', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:'action=bayar&trans_id='+currentTransId+'&bayar='+bayar+'&metode_bayar='+metode
-    }).then(r=>r.json()).then(data => {
-        if (data.success) { bootstrap.Modal.getInstance(document.getElementById('bayarModal')).hide(); BMS.success('Pembayaran berhasil'); setTimeout(function(){ location.reload(); }, 900); }
-        else BMS.error(data.message);
-    });
-}
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

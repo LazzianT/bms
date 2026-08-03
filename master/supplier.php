@@ -1,23 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/header.php';
 requireRole(['admin', 'kasir', 'manager']);
-
-$search = isset($_GET['search']) ? sanitize($conn, $_GET['search']) : '';
-$page   = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-$limit  = 10;
-$offset = ($page - 1) * $limit;
-
-$where = '';
-if ($search) {
-    $where = "WHERE nama LIKE '%$search%' OR telepon LIKE '%$search%' OR email LIKE '%$search%'";
-}
-
-$totalQuery = mysqli_query($conn, "SELECT COUNT(*) as jml FROM supplier $where");
-$totalData  = mysqli_fetch_assoc($totalQuery)['jml'];
-$totalPages = ceil($totalData / $limit);
-
-$query  = "SELECT * FROM supplier $where ORDER BY supplier_id DESC LIMIT $limit OFFSET $offset";
-$result = mysqli_query($conn, $query);
 ?>
 
 <div class="page-header">
@@ -30,16 +13,14 @@ $result = mysqli_query($conn, $query);
 <!-- Search -->
 <div class="card mb-4">
     <div class="card-body py-3">
-        <form method="GET" class="d-flex gap-2">
+        <div class="d-flex gap-2">
             <div class="input-group" style="max-width:400px;">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" class="form-control" name="search" placeholder="Cari nama, telepon, email..." value="<?php echo htmlspecialchars($search); ?>">
+                <input type="text" class="form-control" id="searchInput" placeholder="Cari nama, telepon, email..." autocomplete="off">
             </div>
-            <button type="submit" class="btn btn-primary btn-sm">Cari</button>
-            <?php if ($search): ?>
-                <a href="<?= BASE_URL ?>/master/supplier.php" class="btn btn-outline-secondary btn-sm">Reset</a>
-            <?php endif; ?>
-        </form>
+            <button type="button" class="btn btn-primary btn-sm" onclick="loadSuppliers(1)">Cari</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetSearch()">Reset</button>
+        </div>
     </div>
 </div>
 
@@ -58,58 +39,24 @@ $result = mysqli_query($conn, $query);
                         <th width="140">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php if (mysqli_num_rows($result) > 0): ?>
-                        <?php $no = $offset + 1; while ($row = mysqli_fetch_assoc($result)): ?>
-                        <tr>
-                            <td><?php echo $no++; ?></td>
-                            <td class="fw-semibold"><?php echo htmlspecialchars($row['nama']); ?></td>
-                            <td><?php echo htmlspecialchars($row['telepon']); ?></td>
-                            <td><?php echo htmlspecialchars($row['email']); ?></td>
-                            <td><small class="text-muted"><?php echo htmlspecialchars($row['alamat']); ?></small></td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditModal(<?php echo $row['supplier_id']; ?>)">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteSupplier(<?php echo $row['supplier_id']; ?>, '<?php echo htmlspecialchars($row['nama']); ?>')">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">
-                                <i class="bi bi-inbox display-6 d-block mb-2"></i>
-                                Tidak ada data supplier
-                            </td>
-                        </tr>
-                    <?php endif; ?>
+                <tbody id="supplierTableBody">
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="bi bi-hourglass-split"></i> Memuat data...
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <?php if ($totalPages > 1): ?>
-    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-        <small class="text-muted">Total <?php echo $totalData; ?> data</small>
+    <div id="paginationContainer" class="card-footer bg-white d-flex justify-content-between align-items-center" style="display:none;">
+        <small class="text-muted">Total <span id="totalDataCount">0</span> data</small>
         <nav>
-            <ul class="pagination pagination-sm mb-0">
-                <?php if ($page > 1): ?>
-                    <li class="page-item"><a class="page-link" href="?page=<?php echo $page-1; ?>&search=<?php echo urlencode($search); ?>">Prev</a></li>
-                <?php endif; ?>
-                <?php for ($i = max(1, $page-2); $i <= min($totalPages, $page+2); $i++): ?>
-                    <li class="page-item <?php echo ($i == $page) ? 'active' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>"><?php echo $i; ?></a>
-                    </li>
-                <?php endfor; ?>
-                <?php if ($page < $totalPages): ?>
-                    <li class="page-item"><a class="page-link" href="?page=<?php echo $page+1; ?>&search=<?php echo urlencode($search); ?>">Next</a></li>
-                <?php endif; ?>
+            <ul class="pagination pagination-sm mb-0" id="paginationList">
             </ul>
         </nav>
     </div>
-    <?php endif; ?>
 </div>
 
 <!-- Modal Add/Edit -->
@@ -177,11 +124,127 @@ $result = mysqli_query($conn, $query);
 <script>
 var supplierModal, deleteModal;
 var deleteId = null;
+var currentPage = 1;
+var currentSearch = '';
 
 document.addEventListener('DOMContentLoaded', function() {
     supplierModal = new bootstrap.Modal(document.getElementById('supplierModal'));
     deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    
+    // Load data awal
+    loadSuppliers(1);
+    
+    // Enter key di search input
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            loadSuppliers(1);
+        }
+    });
 });
+
+function loadSuppliers(page) {
+    page = page || 1;
+    currentPage = page;
+    currentSearch = document.getElementById('searchInput').value;
+    
+    var url = '<?= BASE_URL ?>/api/supplier_action.php?action=list&page=' + page + '&limit=10';
+    if (currentSearch) {
+        url += '&search=' + encodeURIComponent(currentSearch);
+    }
+    
+    fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(response) {
+            if (response.success) {
+                renderTable(response.data, response.pagination);
+            } else {
+                BMS.error(response.message || 'Gagal memuat data');
+            }
+        })
+        .catch(function(err) {
+            BMS.error('Error: ' + err.message);
+        });
+}
+
+function renderTable(data, pagination) {
+    var tbody = document.getElementById('supplierTableBody');
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted"><i class="bi bi-inbox display-6 d-block mb-2"></i>Tidak ada data supplier</td></tr>';
+        document.getElementById('paginationContainer').style.display = 'none';
+        return;
+    }
+    
+    var html = '';
+    var no = (pagination.page - 1) * pagination.limit + 1;
+    
+    data.forEach(function(row) {
+        html += '<tr>';
+        html += '<td>' + (no++) + '</td>';
+        html += '<td class="fw-semibold">' + htmlEscape(row.nama) + '</td>';
+        html += '<td>' + htmlEscape(row.telepon) + '</td>';
+        html += '<td>' + htmlEscape(row.email) + '</td>';
+        html += '<td><small class="text-muted">' + htmlEscape(row.alamat) + '</small></td>';
+        html += '<td>';
+        html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="openEditModal(' + row.supplier_id + ')"><i class="bi bi-pencil"></i></button>';
+        html += '<button class="btn btn-sm btn-outline-danger" onclick="deleteSupplier(' + row.supplier_id + ', \'' + htmlEscape(row.nama) + '\')"><i class="bi bi-trash"></i></button>';
+        html += '</td>';
+        html += '</tr>';
+    });
+    
+    tbody.innerHTML = html;
+    
+    // Render pagination
+    renderPagination(pagination);
+}
+
+function renderPagination(pagination) {
+    var container = document.getElementById('paginationContainer');
+    var paginationList = document.getElementById('paginationList');
+    
+    if (pagination.total_page <= 1) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'flex';
+    document.getElementById('totalDataCount').textContent = pagination.total_data;
+    
+    var html = '';
+    
+    // Prev button
+    if (pagination.page > 1) {
+        html += '<li class="page-item"><a class="page-link" href="javascript:loadSuppliers(' + (pagination.page - 1) + ')">Prev</a></li>';
+    }
+    
+    // Page numbers
+    var start = Math.max(1, pagination.page - 2);
+    var end = Math.min(pagination.total_page, pagination.page + 2);
+    
+    for (var i = start; i <= end; i++) {
+        var active = (i === pagination.page) ? 'active' : '';
+        html += '<li class="page-item ' + active + '"><a class="page-link" href="javascript:loadSuppliers(' + i + ')">' + i + '</a></li>';
+    }
+    
+    // Next button
+    if (pagination.page < pagination.total_page) {
+        html += '<li class="page-item"><a class="page-link" href="javascript:loadSuppliers(' + (pagination.page + 1) + ')">Next</a></li>';
+    }
+    
+    paginationList.innerHTML = html;
+}
+
+function resetSearch() {
+    document.getElementById('searchInput').value = '';
+    loadSuppliers(1);
+}
+
+function htmlEscape(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
 function openAddModal() {
     document.getElementById('modalTitle').textContent = 'Tambah Supplier';
@@ -203,6 +266,8 @@ function openEditModal(id) {
                 document.getElementById('email').value = d.email;
                 document.getElementById('alamat').value = d.alamat;
                 supplierModal.show();
+            } else {
+                BMS.error(data.message || 'Gagal memuat data');
             }
         });
 }
@@ -221,11 +286,14 @@ function saveSupplier(e) {
     .then(function(data) {
         if (data.success) {
             supplierModal.hide();
-            BMS.success('Supplier berhasil disimpan');
-            setTimeout(function(){ window.location.reload(); }, 800);
+            BMS.success(data.message || 'Supplier berhasil disimpan');
+            loadSuppliers(1);
         } else {
             BMS.error(data.message || 'Terjadi kesalahan');
         }
+    })
+    .catch(function(err) {
+        BMS.error('Error: ' + err.message);
     });
     return false;
 }
@@ -246,11 +314,14 @@ function confirmDelete() {
     .then(function(data) {
         if (data.success) {
             deleteModal.hide();
-            BMS.success('Supplier berhasil dihapus');
-            setTimeout(function(){ window.location.reload(); }, 800);
+            BMS.success(data.message || 'Supplier berhasil dihapus');
+            loadSuppliers(currentPage);
         } else {
             BMS.error(data.message || 'Gagal menghapus');
         }
+    })
+    .catch(function(err) {
+        BMS.error('Error: ' + err.message);
     });
 }
 </script>

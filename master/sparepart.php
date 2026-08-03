@@ -1,44 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/header.php';
 requireRole(['admin', 'kasir', 'manager']);
-
-$search     = isset($_GET['search']) ? sanitize($conn, $_GET['search']) : '';
-$supplierId = isset($_GET['supplier_id']) ? (int)$_GET['supplier_id'] : 0;
-$stockFilter = isset($_GET['stock']) ? $_GET['stock'] : '';
-$page       = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-$limit      = 10;
-$offset     = ($page - 1) * $limit;
-
-$where = [];
-if ($search) {
-    $where[] = "(sp.kode_sparepart LIKE '%$search%' OR sp.nama_sparepart LIKE '%$search%')";
-}
-if ($supplierId) {
-    $where[] = "sp.supplier_id = $supplierId";
-}
-if ($stockFilter == 'habis') {
-    $where[] = "sp.stok <= 0";
-} elseif ($stockFilter == 'menipis') {
-    $where[] = "sp.stok > 0 AND sp.stok <= sp.stok_minimum";
-} elseif ($stockFilter == 'aman') {
-    $where[] = "sp.stok > sp.stok_minimum";
-}
-
-$whereClause = count($where) > 0 ? 'WHERE ' . implode(' AND ', $where) : '';
-
-$totalQuery = mysqli_query($conn, "SELECT COUNT(*) as jml FROM sparepart sp $whereClause");
-$totalData  = mysqli_fetch_assoc($totalQuery)['jml'];
-$totalPages = ceil($totalData / $limit);
-
-$query = "SELECT sp.*, s.nama as nama_supplier 
-          FROM sparepart sp 
-          LEFT JOIN supplier s ON sp.supplier_id = s.supplier_id 
-          $whereClause 
-          ORDER BY sp.sparepart_id DESC 
-          LIMIT $limit OFFSET $offset";
-$result = mysqli_query($conn, $query);
-
-$suppliers = mysqli_query($conn, "SELECT supplier_id, nama FROM supplier ORDER BY nama");
 ?>
 
 <div class="page-header">
@@ -51,30 +13,23 @@ $suppliers = mysqli_query($conn, "SELECT supplier_id, nama FROM supplier ORDER B
 <!-- Search & Filter -->
 <div class="card mb-4">
     <div class="card-body py-3">
-        <form method="GET" class="d-flex gap-2 flex-wrap">
+        <div class="d-flex gap-2 flex-wrap">
             <div class="input-group" style="max-width:320px;">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" class="form-control" name="search" placeholder="Cari kode, nama sparepart..." value="<?php echo htmlspecialchars($search); ?>">
+                <input type="text" class="form-control" id="searchInput" placeholder="Cari kode, nama sparepart..." autocomplete="off">
             </div>
-            <select class="form-select" name="supplier_id" style="max-width:200px;">
+            <select class="form-select" id="supplierFilter" style="max-width:200px;">
                 <option value="0">Semua Supplier</option>
-                <?php while ($s = mysqli_fetch_assoc($suppliers)): ?>
-                    <option value="<?php echo $s['supplier_id']; ?>" <?php echo ($supplierId == $s['supplier_id']) ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($s['nama']); ?>
-                    </option>
-                <?php endwhile; ?>
             </select>
-            <select class="form-select" name="stock" style="max-width:180px;">
+            <select class="form-select" id="stockFilter" style="max-width:180px;">
                 <option value="">Semua Stok</option>
-                <option value="habis" <?php echo ($stockFilter == 'habis') ? 'selected' : ''; ?>>Stok Habis</option>
-                <option value="menipis" <?php echo ($stockFilter == 'menipis') ? 'selected' : ''; ?>>Stok Menipis</option>
-                <option value="aman" <?php echo ($stockFilter == 'aman') ? 'selected' : ''; ?>>Stok Aman</option>
+                <option value="habis">Stok Habis</option>
+                <option value="menipis">Stok Menipis</option>
+                <option value="aman">Stok Aman</option>
             </select>
-            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-            <?php if ($search || $supplierId || $stockFilter): ?>
-                <a href="<?= BASE_URL ?>/master/sparepart.php" class="btn btn-outline-secondary btn-sm">Reset</a>
-            <?php endif; ?>
-        </form>
+            <button type="button" class="btn btn-primary btn-sm" onclick="loadSpareparts(1)">Filter</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">Reset</button>
+        </div>
     </div>
 </div>
 
@@ -97,85 +52,24 @@ $suppliers = mysqli_query($conn, "SELECT supplier_id, nama FROM supplier ORDER B
                         <th width="140">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php if (mysqli_num_rows($result) > 0): ?>
-                        <?php $no = $offset + 1; while ($row = mysqli_fetch_assoc($result)): ?>
-                        <?php
-                            $stok = $row['stok'];
-                            $stokMin = $row['stok_minimum'] ?? 5;
-                            if ($stok <= 0) {
-                                $stokBadge = 'bg-danger';
-                                $stokLabel = 'Habis';
-                            } elseif ($stok <= $stokMin) {
-                                $stokBadge = 'bg-warning text-dark';
-                                $stokLabel = 'Menipis';
-                            } else {
-                                $stokBadge = 'bg-success';
-                                $stokLabel = 'Aman';
-                            }
-                            $margin = $row['harga_jual'] - $row['harga_beli'];
-                        ?>
-                        <tr>
-                            <td><?php echo $no++; ?></td>
-                            <td><code class="fw-bold"><?php echo htmlspecialchars($row['kode_sparepart']); ?></code></td>
-                            <td class="fw-semibold"><?php echo htmlspecialchars($row['nama_sparepart']); ?></td>
-                            <td><?php echo htmlspecialchars($row['satuan']); ?></td>
-                            <td>
-                                <span class="badge <?php echo $stokBadge; ?>"><?php echo $stok; ?> <?php echo $row['satuan']; ?></span>
-                            </td>
-                            <td><?php echo formatRupiah($row['harga_beli']); ?></td>
-                            <td><?php echo formatRupiah($row['harga_jual']); ?></td>
-                            <td>
-                                <?php if ($margin > 0): ?>
-                                    <span class="text-success fw-semibold">+<?php echo formatRupiah($margin); ?></span>
-                                <?php else: ?>
-                                    <span class="text-danger fw-semibold"><?php echo formatRupiah($margin); ?></span>
-                                <?php endif; ?>
-                            </td>
-                            <td><small><?php echo htmlspecialchars($row['nama_supplier'] ?? '-'); ?></small></td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditModal(<?php echo $row['sparepart_id']; ?>)">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteSparepart(<?php echo $row['sparepart_id']; ?>, '<?php echo htmlspecialchars($row['kode_sparepart']); ?>')">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="10" class="text-center py-4 text-muted">
-                                <i class="bi bi-inbox display-6 d-block mb-2"></i>
-                                Tidak ada data sparepart
-                            </td>
-                        </tr>
-                    <?php endif; ?>
+                <tbody id="sparepartTableBody">
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="bi bi-hourglass-split"></i> Memuat data...
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <?php if ($totalPages > 1): ?>
-    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-        <small class="text-muted">Total <?php echo $totalData; ?> data</small>
+    <div id="paginationContainer" class="card-footer bg-white d-flex justify-content-between align-items-center" style="display:none;">
+        <small class="text-muted">Total <span id="totalDataCount">0</span> data</small>
         <nav>
-            <ul class="pagination pagination-sm mb-0">
-                <?php if ($page > 1): ?>
-                    <li class="page-item"><a class="page-link" href="?page=<?php echo $page-1; ?>&search=<?php echo urlencode($search); ?>&supplier_id=<?php echo $supplierId; ?>&stock=<?php echo urlencode($stockFilter); ?>">Prev</a></li>
-                <?php endif; ?>
-                <?php for ($i = max(1, $page-2); $i <= min($totalPages, $page+2); $i++): ?>
-                    <li class="page-item <?php echo ($i == $page) ? 'active' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&supplier_id=<?php echo $supplierId; ?>&stock=<?php echo urlencode($stockFilter); ?>"><?php echo $i; ?></a>
-                    </li>
-                <?php endfor; ?>
-                <?php if ($page < $totalPages): ?>
-                    <li class="page-item"><a class="page-link" href="?page=<?php echo $page+1; ?>&search=<?php echo urlencode($search); ?>&supplier_id=<?php echo $supplierId; ?>&stock=<?php echo urlencode($stockFilter); ?>">Next</a></li>
-                <?php endif; ?>
+            <ul class="pagination pagination-sm mb-0" id="paginationList">
             </ul>
         </nav>
     </div>
-    <?php endif; ?>
 </div>
 
 <!-- Modal Add/Edit -->
@@ -268,11 +162,25 @@ $suppliers = mysqli_query($conn, "SELECT supplier_id, nama FROM supplier ORDER B
 <script>
 var sparepartModal, deleteModal;
 var deleteId = null;
+var currentPage = 1;
+var currentSearch = '';
+var currentSupplierId = 0;
+var currentStockFilter = '';
 
 document.addEventListener('DOMContentLoaded', function() {
     sparepartModal = new bootstrap.Modal(document.getElementById('sparepartModal'));
     deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    
     loadSuppliers();
+    loadSpareparts(1);
+    
+    // Enter key di search input
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            loadSpareparts(1);
+        }
+    });
 });
 
 function loadSuppliers() {
@@ -280,15 +188,162 @@ function loadSuppliers() {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success) {
-                var select = document.getElementById('supplier_id');
+                var select = document.getElementById('supplierFilter');
+                var modalSelect = document.getElementById('supplier_id');
+                
+                // Clear existing options except first
+                while (select.options.length > 1) select.remove(1);
+                while (modalSelect.options.length > 1) modalSelect.remove(1);
+                
                 data.data.forEach(function(s) {
-                    var opt = document.createElement('option');
-                    opt.value = s.supplier_id;
-                    opt.textContent = s.nama;
-                    select.appendChild(opt);
+                    var opt1 = document.createElement('option');
+                    opt1.value = s.supplier_id;
+                    opt1.textContent = s.nama;
+                    select.appendChild(opt1);
+                    
+                    var opt2 = document.createElement('option');
+                    opt2.value = s.supplier_id;
+                    opt2.textContent = s.nama;
+                    modalSelect.appendChild(opt2);
                 });
             }
         });
+}
+
+function loadSpareparts(page) {
+    page = page || 1;
+    currentPage = page;
+    currentSearch = document.getElementById('searchInput').value;
+    currentSupplierId = parseInt(document.getElementById('supplierFilter').value);
+    currentStockFilter = document.getElementById('stockFilter').value;
+    
+    var url = '<?= BASE_URL ?>/api/sparepart_action.php?action=list&page=' + page + '&limit=10';
+    if (currentSearch) {
+        url += '&search=' + encodeURIComponent(currentSearch);
+    }
+    if (currentSupplierId > 0) {
+        url += '&supplier_id=' + currentSupplierId;
+    }
+    if (currentStockFilter) {
+        url += '&stock_filter=' + encodeURIComponent(currentStockFilter);
+    }
+    
+    fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(response) {
+            if (response.success) {
+                renderTable(response.data, response.pagination);
+            } else {
+                BMS.error(response.message || 'Gagal memuat data');
+            }
+        })
+        .catch(function(err) {
+            BMS.error('Error: ' + err.message);
+        });
+}
+
+function renderTable(data, pagination) {
+    var tbody = document.getElementById('sparepartTableBody');
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted"><i class="bi bi-inbox display-6 d-block mb-2"></i>Tidak ada data sparepart</td></tr>';
+        document.getElementById('paginationContainer').style.display = 'none';
+        return;
+    }
+    
+    var html = '';
+    var no = (pagination.page - 1) * pagination.limit + 1;
+    
+    data.forEach(function(row) {
+        var stok = row.stok;
+        var stokMin = row.stok_minimum || 5;
+        var stokBadge, stokDisplay;
+        
+        if (stok <= 0) {
+            stokBadge = 'bg-danger';
+            stokDisplay = stok + ' ' + row.satuan;
+        } else if (stok <= stokMin) {
+            stokBadge = 'bg-warning text-dark';
+            stokDisplay = stok + ' ' + row.satuan;
+        } else {
+            stokBadge = 'bg-success';
+            stokDisplay = stok + ' ' + row.satuan;
+        }
+        
+        var margin = parseFloat(row.harga_jual) - parseFloat(row.harga_beli);
+        var marginText = margin > 0 ? '<span class="text-success fw-semibold">+' + formatRupiahInline(margin) + '</span>' : 
+                         '<span class="text-danger fw-semibold">' + formatRupiahInline(margin) + '</span>';
+        
+        html += '<tr>';
+        html += '<td>' + (no++) + '</td>';
+        html += '<td><code class="fw-bold">' + htmlEscape(row.kode_sparepart) + '</code></td>';
+        html += '<td class="fw-semibold">' + htmlEscape(row.nama_sparepart) + '</td>';
+        html += '<td>' + htmlEscape(row.satuan) + '</td>';
+        html += '<td><span class="badge ' + stokBadge + '">' + stokDisplay + '</span></td>';
+        html += '<td>' + formatRupiahInline(row.harga_beli) + '</td>';
+        html += '<td>' + formatRupiahInline(row.harga_jual) + '</td>';
+        html += '<td>' + marginText + '</td>';
+        html += '<td><small>' + htmlEscape(row.nama_supplier || '-') + '</small></td>';
+        html += '<td>';
+        html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="openEditModal(' + row.sparepart_id + ')"><i class="bi bi-pencil"></i></button>';
+        html += '<button class="btn btn-sm btn-outline-danger" onclick="deleteSparepart(' + row.sparepart_id + ', \'' + htmlEscape(row.kode_sparepart) + '\')"><i class="bi bi-trash"></i></button>';
+        html += '</td>';
+        html += '</tr>';
+    });
+    
+    tbody.innerHTML = html;
+    renderPagination(pagination);
+}
+
+function renderPagination(pagination) {
+    var container = document.getElementById('paginationContainer');
+    var paginationList = document.getElementById('paginationList');
+    
+    if (pagination.total_page <= 1) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'flex';
+    document.getElementById('totalDataCount').textContent = pagination.total_data;
+    
+    var html = '';
+    
+    if (pagination.page > 1) {
+        html += '<li class="page-item"><a class="page-link" href="javascript:loadSpareparts(' + (pagination.page - 1) + ')">Prev</a></li>';
+    }
+    
+    var start = Math.max(1, pagination.page - 2);
+    var end = Math.min(pagination.total_page, pagination.page + 2);
+    
+    for (var i = start; i <= end; i++) {
+        var active = (i === pagination.page) ? 'active' : '';
+        html += '<li class="page-item ' + active + '"><a class="page-link" href="javascript:loadSpareparts(' + i + ')">' + i + '</a></li>';
+    }
+    
+    if (pagination.page < pagination.total_page) {
+        html += '<li class="page-item"><a class="page-link" href="javascript:loadSpareparts(' + (pagination.page + 1) + ')">Next</a></li>';
+    }
+    
+    paginationList.innerHTML = html;
+}
+
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('supplierFilter').value = '0';
+    document.getElementById('stockFilter').value = '';
+    loadSpareparts(1);
+}
+
+function htmlEscape(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatRupiahInline(num) {
+    if (!num) return 'Rp 0';
+    return 'Rp ' + parseInt(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 function openAddModal() {
@@ -316,6 +371,8 @@ function openEditModal(id) {
                 document.getElementById('harga_jual').value = d.harga_jual;
                 document.getElementById('supplier_id').value = d.supplier_id;
                 sparepartModal.show();
+            } else {
+                BMS.error(data.message || 'Gagal memuat data');
             }
         });
 }
@@ -334,11 +391,14 @@ function saveSparepart(e) {
     .then(function(data) {
         if (data.success) {
             sparepartModal.hide();
-            BMS.success('Sparepart berhasil disimpan');
-            setTimeout(function(){ window.location.reload(); }, 800);
+            BMS.success(data.message || 'Sparepart berhasil disimpan');
+            loadSpareparts(1);
         } else {
             BMS.error(data.message || 'Terjadi kesalahan');
         }
+    })
+    .catch(function(err) {
+        BMS.error('Error: ' + err.message);
     });
     return false;
 }
@@ -359,11 +419,14 @@ function confirmDelete() {
     .then(function(data) {
         if (data.success) {
             deleteModal.hide();
-            BMS.success('Sparepart berhasil dihapus');
-            setTimeout(function(){ window.location.reload(); }, 800);
+            BMS.success(data.message || 'Sparepart berhasil dihapus');
+            loadSpareparts(currentPage);
         } else {
             BMS.error(data.message || 'Gagal menghapus');
         }
+    })
+    .catch(function(err) {
+        BMS.error('Error: ' + err.message);
     });
 }
 </script>

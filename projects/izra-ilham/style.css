@@ -1,0 +1,246 @@
+/* ==========================================================================
+   LIGHT MODERN BLUE THEME - (STYLE.CSS)
+   ========================================================================== */
+
+/* Reset & Font */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-outside: #eef2f7; /* Latar belakang luar layar (abu-abu sangat muda) */
+  --bg-app: #ffffff; /* Latar belakang utama aplikasi (Putih Bersih) */
+  --bg-sidebar: #4e6beb; /* Warna Sidebar Biru Standar Premium */
+  --bg-card: #f8fafc; /* Kotak konten abu-abu super soft */
+  --text-main: #334155; /* Teks utama (gelap) */
+  --text-muted: #94a3b8; /* Teks sekunder (abu-abu) */
+  --text-light: #ffffff; /* Teks putih di atas background gelap */
+  --border-light: #e2e8f0; /* Garis pembatas tipis elegan */
+  --blue-hover: #3b54cd; /* Biru gelap saat hover */
+}
+
+/* Memposisikan aplikasi pas di tengah layar */
+body {
+  font-family: "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
+  background-color: var(--bg-outside);
+  color: var(--text-main);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* CONTAINER UTAMA (Membungkus seluruh aplikasi di tengah) */
+.app-container {
+  width: 100%;
+  max-width: 1200px; /* Batas lebar dasbor agar rapi di tengah */
+  height: 85vh; /* Tinggi aplikasi melayang */
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: 20px; /* Sudut melengkung premium */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+}
+
+/* ==========================================
+   TOPBAR HEADER STYLING
+   ========================================== */
+.topbar {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  padding: 15px 30px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar::before {
+  color: var(--bg-sidebar);
+  font-weight: 800;
+  font-size: 18px;
+  margin-right: 5px;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ==========================================
+   SIDEBAR NAV STYLING (Warna Biru Keren)
+   ========================================== */
+.sidebar {
+  width: 250px;
+  background-color: var(--bg-sidebar);
+  padding: 25px 15px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+/* Judul Kategori Menu */
+.sidebar h5 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 1.2px;
+  margin: 20px 0 8px 12px;
+}
+
+.sidebar ul {
+  list-style: none;
+}
+
+.sidebar ul li {
+  margin-bottom: 3px;
+}
+
+.sidebar ul li a {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+/* Hover & Active State */
+.sidebar ul li a:hover {
+  background-color: var(--blue-hover);
+  color: var(--text-light);
+}
+
+.sidebar ul li a.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-light);
+  font-weight: 700;
+}
+
+/* Custom Scrollbar untuk menu panjang */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+/* ==========================================
+   MAIN CONTENT AREA (Sisi Kanan Putih)
+   ========================================== */
+.main-content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  background-color: #f1f5f9; /* Background luar card */
+}
+
+/* ==========================================
+   CARDS & OUTPUT CONTAINERS
+   ========================================== */
+.profile-grid,
+.output-container {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 30px;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.01);
+}
+
+.profile-grid {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+}
+
+/* Foto Bulat Sesuai Gambar Pinterest */
+.photo-box {
+  width: 130px;
+  height: 130px;
+  background-color: #f8fafc;
+  border: 1px solid var(--border-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.photo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.biodata-card {
+  flex: 1;
+}
+
+.biodata-card h3,
+.output-container h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 20px;
+}
+
+/* INPUT BOX DISPLAY STYLE (Gaya Form Input Putih Elegan) */
+.info-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 12px;
+}
+
+.info-table td.label {
+  width: 120px;
+  font-weight: 600;
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+.info-table td.semi {
+  display: none; /* Sembunyikan titik dua agar bersih */
+}
+
+/* Kolom kanan dibuat seperti kotak input form modern */
+.info-table td:not(.label) {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-light);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+/* ==========================================
+   CONSOLE / CODE OUTPUT TERMINAL
+   ========================================== */
+.console-box {
+  background-color: #0f172a; /* Hitam abu-abu gelap agar hasil codingan tetap kontras */
+  color: #38bdf8; /* Biru muda neon yang sejuk di mata */
+  padding: 18px;
+  border-radius: 10px;
+  font-family: "Fira Code", "Courier New", monospace;
+  margin-top: 15px;
+  line-height: 1.6;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
